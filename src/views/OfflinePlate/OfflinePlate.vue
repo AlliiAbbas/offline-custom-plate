@@ -14,6 +14,7 @@
                 <input
                   type="text"
                   v-model="formData.ownerName"
+                  @input="filterTextOnly"
                   class="form-control"
                   :class="{ 'is-invalid': validationErrors.ownerName }"
                   placeholder="اسم المالك"
@@ -25,14 +26,13 @@
             </div>
             <div class="col-md-6">
               <div class="form-group">
-                <label class="form-label fw-medium mb-2">الرقم القومي</label>
+                <label class="form-label fw-medium mb-2">الرقم القومي /  جواز السفر</label>
                 <input
                   type="text"
                   v-model="formData.nationalId"
                   class="form-control"
                   :class="{ 'is-invalid': validationErrors.nationalId }"
                   placeholder="الرقم القومي"
-                  maxlength="14"
                 />
                 <div class="invalid-feedback d-block" v-if="validationErrors.nationalId">
                   {{ validationErrors.nationalId }}
@@ -122,6 +122,7 @@
                 <input
                   type="text"
                   v-model="formData.licenseType"
+                  @input="filterTextOnly"
                   class="form-control"
                   :class="{ 'is-invalid': validationErrors.licenseType }"
                   placeholder="نوع الترخيص"
@@ -133,19 +134,28 @@
             </div>
             <div class="col-md-6">
               <div class="form-group">
-                <label class="form-label fw-medium mb-2">رقم اللوحه</label>
-                <input
-                  type="text"
-                  v-model="formData.plateNumber"
-                  class="form-control"
-                  :class="{ 'is-invalid': validationErrors.plateNumber }"
-                  placeholder="رقم اللوحه"
-                />
-                <div class="invalid-feedback d-block" v-if="validationErrors.plateNumber">
+                <label class="form-label fw-medium mb-2">رقم اللوحة</label>
+                <div class="d-flex gap-2 flex-wrap">
+                  <input
+                      v-for="(char, index) in formData.plateNumber"
+                      :key="index"
+                      v-model="formData.plateNumber[index]"
+                      type="text"
+                      maxlength="1"
+                      class="form-control text-center plate-box"
+                      :class="validationErrors.plateNumber ? 'is-invalid border-danger' : ''"
+                      @input="(e) => onPlateInput(index, e)"
+                      @keydown.backspace="(e) => onPlateBackspace(index, e)"
+                      ref="plateInputs"
+                  />
+                </div>
+                <div class="invalid-feedback d-block mt-1" v-if="validationErrors.plateNumber">
                   {{ validationErrors.plateNumber }}
                 </div>
               </div>
             </div>
+
+
             <div class="col-md-6">
               <div class="form-group">
                 <label class="form-label fw-medium mb-2">رقم الشاسيه</label>
@@ -182,6 +192,7 @@
                 <input
                   type="text"
                   v-model="formData.cylinders"
+                  @input="filterNumbersOnly"
                   class="form-control"
                   :class="{ 'is-invalid': validationErrors.cylinders }"
                   placeholder="السلندرات"
@@ -200,6 +211,7 @@
                   class="form-control"
                   :class="{ 'is-invalid': validationErrors.lastInsuranceCompany }"
                   placeholder="آخر شركة تأمين"
+                  @input="filterTextOnly"
                 />
                 <div class="invalid-feedback d-block" v-if="validationErrors.lastInsuranceCompany">
                   {{ validationErrors.lastInsuranceCompany }}
@@ -227,7 +239,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, nextTick } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
 const router = useRouter();
@@ -243,16 +255,50 @@ const formData = ref({
   model: '',
   manufacturingYear: '',
   licenseType: '',
-  plateNumber: '',
+  plateNumber:  Array(7).fill(''),
   chassisNumber: '',
   engineNumber: '',
   cylinders: '',
   lastInsuranceCompany: ''
 });
-
+const plateInputs = ref([]);
 
 const validationErrors = ref({});
 
+function filterTextOnly(event) {
+  const input = event.target.value
+  const filtered = input.replace(/[^ء-يa-zA-Z\s]/g, '')
+  event.target.value = filtered
+  formData.ownerName = filtered
+}
+function filterNumbersOnly(event) {
+  const input = event.target.value
+  const filtered = input.replace(/[^0-9]/g, '')
+  event.target.value = filtered
+  formData.phoneNumber = filtered
+}
+
+const onPlateInput = async (index, event) => {
+  const value = event.target.value.toUpperCase();
+
+  if (/^[\u0600-\u06FFA-Z0-9]$/.test(value)) {
+    formData.value.plateNumber[index] = value;
+
+    await nextTick();
+    if (index < plateInputs.value.length - 1) {
+      plateInputs.value[index + 1].focus();
+    }
+  } else {
+    formData.value.plateNumber[index] = '';
+  }
+};
+
+const onPlateBackspace = async (index, event) => {
+  if (!formData.value.plateNumber[index] && index > 0) {
+    await nextTick();
+    plateInputs.value[index - 1].focus();
+  }
+};
 const validateForm = () => {
   validationErrors.value = {};
   let isValid = true;
@@ -260,13 +306,14 @@ const validateForm = () => {
   if (!formData.value.ownerName.trim()) {
     validationErrors.value.ownerName = 'اسم المالك مطلوب';
     isValid = false;
+  } else {
+    validationErrors.value.ownerName = '';
   }
   if (!formData.value.nationalId.trim()) {
-    validationErrors.value.nationalId = 'الرقم القومي مطلوب';
+    validationErrors.value.nationalId = 'الرقم القومي / جواز السفر  مطلوب';
     isValid = false;
-  } else if (!/^\d{14}$/.test(formData.value.nationalId)) {
-    validationErrors.value.nationalId = 'الرقم القومي يجب أن يكون 14 رقم';
-    isValid = false;
+  } else  {
+    validationErrors.value.nationalId = '';
   }
   if (!formData.value.address.trim()) {
     validationErrors.value.address = 'العنوان مطلوب';
@@ -299,7 +346,7 @@ const validateForm = () => {
     validationErrors.value.licenseType = 'نوع الترخيص مطلوب';
     isValid = false;
   }
-  if (!formData.value.plateNumber.trim()) {
+  if (formData.value.plateNumber.some(char => char.trim() === '')) {
     validationErrors.value.plateNumber = 'رقم اللوحة مطلوب';
     isValid = false;
   }
@@ -344,6 +391,14 @@ const handleSubmit = async () => {
 </script>
 
 <style scoped>
+.plate-box {
+  width: 40px;
+  height: 40px;
+  text-transform: uppercase;
+  font-size: 1.25rem;
+  padding: 0;
+  text-align: center;
+}
 .form-control:focus {
   border-color: #dc3545;
   box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25);
