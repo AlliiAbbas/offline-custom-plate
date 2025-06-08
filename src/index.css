@@ -1,0 +1,33 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@100;200;300;400;500;600;700;800;900&display=swap');
+@import "bootstrap/dist/css/bootstrap.css";
+
+:root {
+  --primary-50: #fef2f2;
+  --primary-100: #fee2e2;
+  --primary-200: #fecaca;
+  --primary-300: #fca5a5;
+  --primary-400: #f87171;
+  --primary-500: #E22332;
+  --primary-600: #dc2626;
+  --primary-700: #b91c1c;
+  --primary-800: #991b1b;
+  --primary-900: #7f1d1d;
+}
+
+body {
+  font-family: 'Noto Sans Arabic', sans-serif;
+  font-feature-settings: "ss01", "ss02", "cv01", "cv02", "cv03", "cv04", "cv05", "cv06", "cv07", "cv08", "cv09", "cv10", "cv11";
+  -webkit-font-feature-settings: "ss01", "ss02", "cv01", "cv02", "cv03", "cv04", "cv05", "cv06", "cv07", "cv08", "cv09", "cv10", "cv11";
+  font-variation-settings: "slnt" 0;
+}
+
+.primary-btn {
+  background-color: var(--primary-500) !important;
+  color: white !important;
+}
+
+.large-btn {
+  width: 247px;
+  height: 48px;
+}
+

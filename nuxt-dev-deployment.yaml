@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nuxt-dev
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nuxt-dev
+  template:
+    metadata:
+      labels:
+        app: nuxt-dev
+    spec:
+      containers:
+        - name: nuxt-dev-container
+          image: masec11112020/nuxt-dev:latest
+          ports:
+            - containerPort: 3000
