@@ -4,7 +4,7 @@
       <header class="card-header bg-white border-bottom rounded-top py-3" style="border-color: #F1F1F1;">
         <h1 class="card-title mb-0 fw-bold fs-4">تأمين لوحة جمركيه</h1>
       </header>
-      
+
       <section class="card-body p-4" v-if="!loading">
         <form @submit.prevent="handleSubmit">
           <div class="row g-4">
@@ -12,11 +12,11 @@
               <div class="form-group">
                 <label class="form-label fw-medium mb-2">اسم المالك</label>
                 <input
-                  type="text"
-                  v-model="formData.ownerName"
-                  class="form-control"
-                  :class="{ 'is-invalid': validationErrors.ownerName }"
-                  placeholder="اسم المالك"
+                    type="text"
+                    v-model="formData.ownerName"
+                    class="form-control"
+                    :class="{ 'is-invalid': validationErrors.ownerName }"
+                    placeholder="اسم المالك"
                 />
                 <div class="invalid-feedback d-block" v-if="validationErrors.ownerName">
                   {{ validationErrors.ownerName }}
@@ -27,12 +27,12 @@
               <div class="form-group">
                 <label class="form-label fw-medium mb-2">الرقم القومي</label>
                 <input
-                  type="text"
-                  v-model="formData.nationalId"
-                  class="form-control"
-                  :class="{ 'is-invalid': validationErrors.nationalId }"
-                  placeholder="الرقم القومي"
-                  maxlength="14"
+                    type="text"
+                    v-model="formData.nationalId"
+                    class="form-control"
+                    :class="{ 'is-invalid': validationErrors.nationalId }"
+                    placeholder="الرقم القومي"
+                    maxlength="14"
                 />
                 <div class="invalid-feedback d-block" v-if="validationErrors.nationalId">
                   {{ validationErrors.nationalId }}
@@ -43,11 +43,11 @@
               <div class="form-group">
                 <label class="form-label fw-medium mb-2">العنوان</label>
                 <input
-                  type="text"
-                  v-model="formData.address"
-                  class="form-control"
-                  :class="{ 'is-invalid': validationErrors.address }"
-                  placeholder="العنوان"
+                    type="text"
+                    v-model="formData.address"
+                    class="form-control"
+                    :class="{ 'is-invalid': validationErrors.address }"
+                    placeholder="العنوان"
                 />
                 <div class="invalid-feedback d-block" v-if="validationErrors.address">
                   {{ validationErrors.address }}
@@ -58,11 +58,11 @@
               <div class="form-group">
                 <label class="form-label fw-medium mb-2">الوظيفه</label>
                 <input
-                  type="text"
-                  v-model="formData.job"
-                  class="form-control"
-                  :class="{ 'is-invalid': validationErrors.job }"
-                  placeholder="الوظيفه"
+                    type="text"
+                    v-model="formData.job"
+                    class="form-control"
+                    :class="{ 'is-invalid': validationErrors.job }"
+                    placeholder="الوظيفه"
                 />
                 <div class="invalid-feedback d-block" v-if="validationErrors.job">
                   {{ validationErrors.job }}
@@ -71,13 +71,28 @@
             </div>
             <div class="col-md-6">
               <div class="form-group">
+                <label class="form-label fw-medium mb-2">رقم التليفون</label>
+                <input
+                    type="text"
+                    v-model="formData.phoneNumber"
+                    class="form-control"
+                    :class="{ 'is-invalid': validationErrors.phoneNumber }"
+                    placeholder="رقم تليفون المالك"
+                />
+                <div class="invalid-feedback d-block" v-if="validationErrors.phoneNumber">
+                  {{ validationErrors.phoneNumber }}
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group">
                 <label class="form-label fw-medium mb-2">الماركه</label>
                 <input
-                  type="text"
-                  v-model="formData.brand"
-                  class="form-control"
-                  :class="{ 'is-invalid': validationErrors.brand }"
-                  placeholder="الماركه"
+                    type="text"
+                    v-model="formData.brand"
+                    class="form-control"
+                    :class="{ 'is-invalid': validationErrors.brand }"
+                    placeholder="الماركه"
                 />
                 <div class="invalid-feedback d-block" v-if="validationErrors.brand">
                   {{ validationErrors.brand }}
@@ -88,11 +103,11 @@
               <div class="form-group">
                 <label class="form-label fw-medium mb-2">الطراز</label>
                 <input
-                  type="text"
-                  v-model="formData.model"
-                  class="form-control"
-                  :class="{ 'is-invalid': validationErrors.model }"
-                  placeholder="الطراز"
+                    type="text"
+                    v-model="formData.model"
+                    class="form-control"
+                    :class="{ 'is-invalid': validationErrors.model }"
+                    placeholder="الطراز"
                 />
                 <div class="invalid-feedback d-block" v-if="validationErrors.model">
                   {{ validationErrors.model }}
@@ -103,13 +118,13 @@
               <div class="form-group">
                 <label class="form-label fw-medium mb-2">سنه الصنع</label>
                 <input
-                  type="number"
-                  step="1"
-                  v-model="formData.manufacturingYear"
-                  class="form-control"
-                  :class="{ 'is-invalid': validationErrors.manufacturingYear }"
-                  placeholder="سنه الصنع"
-                  min="1"
+                    type="number"
+                    step="1"
+                    v-model="formData.manufacturingYear"
+                    class="form-control"
+                    :class="{ 'is-invalid': validationErrors.manufacturingYear }"
+                    placeholder="سنه الصنع"
+                    min="1"
                 />
                 <div class="invalid-feedback d-block" v-if="validationErrors.manufacturingYear">
                   {{ validationErrors.manufacturingYear }}
@@ -118,13 +133,28 @@
             </div>
             <div class="col-md-6">
               <div class="form-group">
+                <label class="form-label fw-medium mb-2">لون المركبة</label>
+                <input
+                    type="text"
+                    v-model="formData.vehicle_color"
+                    class="form-control"
+                    :class="{ 'is-invalid': validationErrors.vehicle_color }"
+                    placeholder="ادخل لون المركبة"
+                />
+                <div class="invalid-feedback d-block" v-if="validationErrors.vehicle_color">
+                  {{ validationErrors.vehicle_color }}
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group">
                 <label class="form-label fw-medium mb-2">نوع الترخيص</label>
                 <input
-                  type="text"
-                  v-model="formData.licenseType"
-                  class="form-control"
-                  :class="{ 'is-invalid': validationErrors.licenseType }"
-                  placeholder="نوع الترخيص"
+                    type="text"
+                    v-model="formData.licenseType"
+                    class="form-control"
+                    :class="{ 'is-invalid': validationErrors.licenseType }"
+                    placeholder="نوع الترخيص"
                 />
                 <div class="invalid-feedback d-block" v-if="validationErrors.licenseType">
                   {{ validationErrors.licenseType }}
@@ -135,11 +165,11 @@
               <div class="form-group">
                 <label class="form-label fw-medium mb-2">رقم اللوحه</label>
                 <input
-                  type="text"
-                  v-model="formData.plateNumber"
-                  class="form-control"
-                  :class="{ 'is-invalid': validationErrors.plateNumber }"
-                  placeholder="رقم اللوحه"
+                    type="text"
+                    v-model="formData.plateNumber"
+                    class="form-control"
+                    :class="{ 'is-invalid': validationErrors.plateNumber }"
+                    placeholder="رقم اللوحه"
                 />
                 <div class="invalid-feedback d-block" v-if="validationErrors.plateNumber">
                   {{ validationErrors.plateNumber }}
@@ -150,11 +180,11 @@
               <div class="form-group">
                 <label class="form-label fw-medium mb-2">رقم الشاسيه</label>
                 <input
-                  type="text"
-                  v-model="formData.chassisNumber"
-                  class="form-control"
-                  :class="{ 'is-invalid': validationErrors.chassisNumber }"
-                  placeholder="رقم الشاسيه"
+                    type="text"
+                    v-model="formData.chassisNumber"
+                    class="form-control"
+                    :class="{ 'is-invalid': validationErrors.chassisNumber }"
+                    placeholder="رقم الشاسيه"
                 />
                 <div class="invalid-feedback d-block" v-if="validationErrors.chassisNumber">
                   {{ validationErrors.chassisNumber }}
@@ -165,11 +195,11 @@
               <div class="form-group">
                 <label class="form-label fw-medium mb-2">رقم الموتور</label>
                 <input
-                  type="text"
-                  v-model="formData.engineNumber"
-                  class="form-control"
-                  :class="{ 'is-invalid': validationErrors.engineNumber }"
-                  placeholder="رقم الموتور"
+                    type="text"
+                    v-model="formData.engineNumber"
+                    class="form-control"
+                    :class="{ 'is-invalid': validationErrors.engineNumber }"
+                    placeholder="رقم الموتور"
                 />
                 <div class="invalid-feedback d-block" v-if="validationErrors.engineNumber">
                   {{ validationErrors.engineNumber }}
@@ -180,11 +210,11 @@
               <div class="form-group">
                 <label class="form-label fw-medium mb-2">السلندرات</label>
                 <input
-                  type="text"
-                  v-model="formData.cylinders"
-                  class="form-control"
-                  :class="{ 'is-invalid': validationErrors.cylinders }"
-                  placeholder="السلندرات"
+                    type="text"
+                    v-model="formData.cylinders"
+                    class="form-control"
+                    :class="{ 'is-invalid': validationErrors.cylinders }"
+                    placeholder="السلندرات"
                 />
                 <div class="invalid-feedback d-block" v-if="validationErrors.cylinders">
                   {{ validationErrors.cylinders }}
@@ -195,11 +225,11 @@
               <div class="form-group">
                 <label class="form-label fw-medium mb-2">اخر شركه تامين</label>
                 <input
-                  type="text"
-                  v-model="formData.lastInsuranceCompany"
-                  class="form-control"
-                  :class="{ 'is-invalid': validationErrors.lastInsuranceCompany }"
-                  placeholder="آخر شركة تأمين"
+                    type="text"
+                    v-model="formData.lastInsuranceCompany"
+                    class="form-control"
+                    :class="{ 'is-invalid': validationErrors.lastInsuranceCompany }"
+                    placeholder="آخر شركة تأمين"
                 />
                 <div class="invalid-feedback d-block" v-if="validationErrors.lastInsuranceCompany">
                   {{ validationErrors.lastInsuranceCompany }}
@@ -247,7 +277,9 @@ const formData = ref({
   chassisNumber: '',
   engineNumber: '',
   cylinders: '',
-  lastInsuranceCompany: ''
+  lastInsuranceCompany: '',
+  phoneNumber: '',
+  vehicle_color: '',
 });
 
 
@@ -260,12 +292,24 @@ const validateForm = () => {
   if (!formData.value.ownerName.trim()) {
     validationErrors.value.ownerName = 'اسم المالك مطلوب';
     isValid = false;
+  } if (!formData.value.vehicle_color.trim()) {
+    validationErrors.value.vehicle_color = 'لون المركبه مطلوب';
+    isValid = false;
+  } else if(/^\d+$/.test(formData.value.vehicle_color)){
+    validationErrors.value.vehicle_color = 'لون المركبة يجب أن يكون حروف فقط';
   }
   if (!formData.value.nationalId.trim()) {
     validationErrors.value.nationalId = 'الرقم القومي مطلوب';
     isValid = false;
   } else if (!/^\d{14}$/.test(formData.value.nationalId)) {
     validationErrors.value.nationalId = 'الرقم القومي يجب أن يكون 14 رقم';
+    isValid = false;
+  }
+  if (!formData.value.phoneNumber.trim()) {
+    validationErrors.value.phoneNumber = 'رقم التليفون مطلوب';
+    isValid = false;
+  } else if (!/^(010|011|012|015)\d{8}$/.test(formData.value.phoneNumber)) {
+    validationErrors.value.phoneNumber = 'ادخل رقم تليفون صالح';
     isValid = false;
   }
   if (!formData.value.address.trim()) {
