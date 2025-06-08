@@ -32,7 +32,7 @@
                   v-model="formData.nationalId"
                   class="form-control"
                   :class="{ 'is-invalid': validationErrors.nationalId }"
-                  placeholder="الرقم القومي"
+                  placeholder="الرقم القومي /  جواز السفر"
                 />
                 <div class="invalid-feedback d-block" v-if="validationErrors.nationalId">
                   {{ validationErrors.nationalId }}
@@ -74,8 +74,8 @@
                 <label class="form-label fw-medium mb-2">رقم التليفون</label>
                 <input
                     type="text"
-                    @input="filterNumbersOnly"
                     v-model="formData.phoneNumber"
+                    @input="filterNumbersOnly"
                     class="form-control"
                     :class="{ 'is-invalid': validationErrors.phoneNumber }"
                     placeholder="رقم تليفون المالك"
@@ -180,22 +180,8 @@
                       ref="plateInputs"
                   />
                 </div>
-                <div class="invalid-feedback d-block mt-1" v-if="validationErrors.plateNumber">
-                <label class="form-label fw-medium mb-2">رقم اللوحه</label>
-                <input
-                    type="text"
-                    v-model="formData.plateNumber"
-                    class="form-control"
-                    :class="{ 'is-invalid': validationErrors.plateNumber }"
-                    placeholder="رقم اللوحه"
-                />
-                <div class="invalid-feedback d-block" v-if="validationErrors.plateNumber">
-                  {{ validationErrors.plateNumber }}
-                </div>
               </div>
             </div>
-
-
             <div class="col-md-6">
               <div class="form-group">
                 <label class="form-label fw-medium mb-2">رقم الشاسيه</label>
@@ -230,12 +216,12 @@
               <div class="form-group">
                 <label class="form-label fw-medium mb-2">السلندرات</label>
                 <input
-                  type="text"
-                  v-model="formData.cylinders"
-                  @input="filterNumbersOnly"
-                  class="form-control"
-                  :class="{ 'is-invalid': validationErrors.cylinders }"
-                  placeholder="السلندرات"
+                    type="text"
+                    v-model="formData.cylinders"
+                    @input="filterNumbersOnly"
+                    class="form-control"
+                    :class="{ 'is-invalid': validationErrors.cylinders }"
+                    placeholder="السلندرات"
                 />
                 <div class="invalid-feedback d-block" v-if="validationErrors.cylinders">
                   {{ validationErrors.cylinders }}
@@ -246,12 +232,12 @@
               <div class="form-group">
                 <label class="form-label fw-medium mb-2">اخر شركه تامين</label>
                 <input
-                  type="text"
-                  v-model="formData.lastInsuranceCompany"
-                  class="form-control"
-                  :class="{ 'is-invalid': validationErrors.lastInsuranceCompany }"
-                  placeholder="آخر شركة تأمين"
-                  @input="filterTextOnly"
+                    type="text"
+                    v-model="formData.lastInsuranceCompany"
+                    class="form-control"
+                    :class="{ 'is-invalid': validationErrors.lastInsuranceCompany }"
+                    placeholder="آخر شركة تأمين"
+                    @input="filterTextOnly"
                 />
                 <div class="invalid-feedback d-block" v-if="validationErrors.lastInsuranceCompany">
                   {{ validationErrors.lastInsuranceCompany }}
@@ -259,6 +245,9 @@
               </div>
             </div>
           </div>
+
+
+
 
           <footer class="card-footer bg-white d-flex justify-content-end border-top rounded-bottom py-3 mt-4">
             <button class="btn btn-danger rounded-3 py-2 fw-bold" style="width: 300px;" :disabled="loading" type="submit">
@@ -348,6 +337,8 @@ const validateForm = () => {
   if (!formData.value.ownerName.trim()) {
     validationErrors.value.ownerName = 'اسم المالك مطلوب';
     isValid = false;
+  } else {
+    validationErrors.value.ownerName = '';
   } if (!formData.value.vehicle_color.trim()) {
     validationErrors.value.vehicle_color = 'لون المركبه مطلوب';
     isValid = false;
