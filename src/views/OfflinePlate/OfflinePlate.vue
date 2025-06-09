@@ -389,9 +389,12 @@ const validateForm = () => {
     validationErrors.value.licenseType = 'نوع الترخيص مطلوب';
     isValid = false;
   }
-  if (formData.value.plateNumber.some(char => char.trim() === '')) {
-    validationErrors.value.plateNumber = 'رقم اللوحة مطلوب';
+  const filledPlateChars = formData.value.plateNumber.filter(char => char.trim() !== '');
+  if (filledPlateChars.length < 5) {
+    validationErrors.value.plateNumber = 'يرجى إدخال 5 خانات على الأقل من رقم اللوحة';
     isValid = false;
+  } else {
+    validationErrors.value.plateNumber = '';
   }
   if (!formData.value.chassisNumber.trim()) {
     validationErrors.value.chassisNumber = 'رقم الشاسيه مطلوب';
