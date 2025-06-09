@@ -64,15 +64,15 @@ function goHome() {
 
         <div @click="router.push('/')" style="cursor: pointer" 
              :class="['document-button rounded-3 d-flex align-items-center gap-2 px-4 py-2 mt-4', 
-                     isCurrentRoute('/') ? 'bg-danger' : 'bg-light']">
+                     isCurrentRoute('/') || isCurrentRoute('/offline-plate') || isCurrentRoute('/customs-plate-insurance-offline')  ? 'bg-danger' : 'bg-light']">
           <div>
             <img src="../../../assets/images/3.png" alt="document" class="document-icon"/>
           </div>
-          <span :class="['fw-medium', isCurrentRoute('/') ? 'text-white' : 'text-dark']">اصدار الوثائق</span>
+          <span :class="['fw-medium', isCurrentRoute('/') || isCurrentRoute('/offline-plate') || isCurrentRoute('/customs-plate-insurance-offline') ? 'text-white' : 'text-dark']">اصدار الوثائق</span>
         </div>
         <div @click="router.push('/table')" style="cursor: pointer" 
              :class="['document-button rounded-3 d-flex align-items-center gap-2 px-4 py-2 mt-4',
-                     isCurrentRoute('/table') ? 'bg-danger' : 'bg-light']">
+                     isCurrentRoute('/table')  ? 'bg-danger' : 'bg-light']">
           <div>
             <img src="../../../assets/images/3.png" alt="document" class="document-icon"/>
           </div>

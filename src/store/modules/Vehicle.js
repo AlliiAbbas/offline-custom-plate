@@ -2,7 +2,7 @@ import offlineCalculations from "../../calculations/offline_calculations";
 import {vehiclesType} from '../../seeder/vehiclesTypeOffline'
 import {custom_extensions_offline} from '../../seeder/customExtensionsOffline'
 import vehicle_api from '../../api/vehicle_api';
-import { initDB } from '../../utils/indexedDB';
+import { initCustomPlateDB } from '../../utils/indexedDB';
 
 const state = {
     vehicles_type_offline:vehiclesType,
@@ -13,6 +13,12 @@ const state = {
 const mutations = {
     setUserData(state, payload) {
         state.user_data = payload
+    },
+    setVehiclesTypeOffline(state, payload) {
+        state.vehicles_type_offline = payload[0]
+    },
+    setCustomExtensionsOffline(state, payload) {
+        state.custom_extensions_offline = payload[0]
     }
 }
 
@@ -51,7 +57,7 @@ const actions = {
                 }
 
                 // Get all data from IndexedDB
-                const db = await initDB();
+                const db = await initCustomPlateDB();
                 const transaction = db.transaction(['calculations'], 'readonly');
                 const store = transaction.objectStore('calculations');
                 const request = store.getAll();
@@ -93,7 +99,57 @@ const actions = {
                 reject(error);
             }
         });
-    }
+    },
+    GetCustomPlate({ commit }) {
+        return new Promise((resolve, reject) => {
+            vehicle_api.GetCustomPlate()
+                .then(response => {
+                    resolve(response);
+                })
+                .catch(error => {
+                    reject(error);
+                });
+        });
+    },
+    GetCustomPlateExtensions({ commit }) {
+        return new Promise((resolve, reject) => {
+            vehicle_api.GetCustomPlateExtensions()
+                .then(response => {
+                    resolve(response);
+                })
+                .catch(error => {
+                    reject(error);
+                });
+        });
+    },
+    async initializeOfflineData({ commit }) {
+        try {
+            const db = await initCustomPlateDB();
+            const transaction = db.transaction(['customPlate'], 'readonly');
+            const store = transaction.objectStore('customPlate');
+            const request = store.getAll();
+
+            request.onsuccess = () => {
+                const offlineData = request.result;
+                if (offlineData && offlineData.length > 0) {
+                    // Extract customPlate data
+                    const customPlateData = offlineData
+                        .filter(item => item.data && item.data.customPlate)
+                        .map(item => item.data.customPlate);
+                    
+                    // Extract customExtensions data
+                    const customExtensionsData = offlineData
+                        .filter(item => item.data && item.data.extensions)
+                        .map(item => item.data.extensions);
+
+                    commit('setVehiclesTypeOffline', customPlateData);
+                    commit('setCustomExtensionsOffline', customExtensionsData);
+                }
+            };
+        } catch (error) {
+            console.error('Error initializing offline data:', error);
+        }
+    },
 }
 
 const getters = {

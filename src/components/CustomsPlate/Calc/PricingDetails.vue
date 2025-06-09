@@ -4,25 +4,53 @@
     <div class="details-panel">
       <div class="details-list">
         <div v-for="i in props?.extensionsData" class="detail-item d-flex flex-column">
-          <div class="w-full d-flex w-100 justify-content-between">
-            <span class="amount">{{ formatEGP(i?.amount) }}</span>
-            <span class="label">{{ i?.name }}</span>
+          <div v-if="Array.isArray(i)" v-for="e in i" class="w-full d-flex flex-column w-100 justify-content-between">
+            <div class="w-full d-flex w-100 justify-content-between"><span
+                class="amount"></span> <span class="label" style="font-weight: bold">{{e?.name}}</span>
+            </div>
+            <div class="w-full d-flex w-100 justify-content-between"><span
+                class="amount">{{ e?.details?.range }}</span> <span class="label">المدة</span>
+            </div>
+           
+            <div class="w-full d-flex w-100 justify-content-between"><span
+                class="amount">{{ formatEGP(e?.details?.taxes?.fixed_tax) }}</span> <span class="label">ضريبه نوعيه</span></div>
+            <div v-if="i.amount !== 8" class="w-full d-flex w-100 justify-content-between"><span
+                class="amount">{{ formatEGP(e?.details?.raw_amount) }}</span> <span class="label">القسط الصافي</span></div>
+            <div  class="w-full d-flex w-100 justify-content-between"><span
+                class="amount">{{ formatEGP(e?.details?.taxes?.issue_fees) }}</span> <span class="label">مصاريف الاصدار</span></div>
+            <div v-if="i.amount !== 8" class="w-full d-flex w-100 justify-content-between"><span
+                class="amount">{{ formatEGP(e?.details?.taxes?.rounding) }}</span> <span class="label">فرق التقريب</span></div>
+            <div class="w-full d-flex w-100 justify-content-between">
+              <span class="amount">{{ formatEGP(e?.amount) }}</span>
+              <span class="label">اجمالي المستحق علي الملحق</span>
+            </div>
+            <div v-if="i.amount !== 8" class="w-full d-flex w-100 justify-content-between"><span
+                class="amount">{{ formatEGP(e?.details?.taxes?.TotalTax) }}</span> <span class="label">اجمالي الضرائب</span>
+            </div>
           </div>
-          <div v-if="i.details?.taxes?.stamp_tax" class="w-full d-flex w-100 justify-content-between"><span
-              class="amount">{{ formatEGP(i.details.taxes.stamp_tax) }}</span> <span class="label">نصف دمغه نسبيه</span>
+          <div v-else class="w-full d-flex flex-column w-100 justify-content-between">
+            <div class="w-full d-flex w-100 justify-content-between"><span
+                class="amount"></span> <span class="label" style="font-weight: bold">{{i?.name}}</span>
+            </div>
+
+
+
+            <div class="w-full d-flex w-100 justify-content-between"><span
+                class="amount">{{ formatEGP(i?.details?.taxes?.fixed_tax) }}</span> <span class="label">ضريبه نوعيه</span></div>
+            <div v-if="i.amount !== 8" class="w-full d-flex w-100 justify-content-between"><span
+                class="amount">{{ formatEGP(i?.details?.raw_amount) }}</span> <span class="label">القسط الصافي</span></div>
+            <div  class="w-full d-flex w-100 justify-content-between"><span
+                class="amount">{{ formatEGP(i?.details?.taxes?.issue_fees) }}</span> <span class="label">مصاريف الاصدار</span></div>
+            <div v-if="i.amount !== 8" class="w-full d-flex w-100 justify-content-between"><span
+                class="amount">{{ formatEGP(i?.details?.taxes?.rounding) }}</span> <span class="label">فرق التقريب</span></div>
+            <div class="w-full d-flex w-100 justify-content-between">
+              <span class="amount">{{ formatEGP(i?.amount) }}</span>
+              <span class="label">اجمالي المستحق علي الملحق</span>
+            </div>
+            <div v-if="i.amount !== 8" class="w-full d-flex w-100 justify-content-between"><span
+                class="amount">{{ formatEGP(i?.details?.taxes?.TotalTax) }}</span> <span class="label">اجمالي الضرائب</span>
+            </div>
           </div>
-          <div v-if="i.details?.taxes?.supervision_tax" class="w-full d-flex w-100 justify-content-between"><span
-              class="amount">{{ formatEGP(i.details.taxes.supervision_tax) }}</span> <span class="label">رسم الاشراف والرقابه</span></div>
-          <div v-if="i.details?.taxes?.review_tax" class="w-full d-flex w-100 justify-content-between"><span
-              class="amount">{{ formatEGP(i.details.taxes.review_tax) }}</span> <span class="label">رسم الاعتماد والمراجعه</span></div>
-          <div v-if="i.details?.taxes?.fixed_tax" class="w-full d-flex w-100 justify-content-between"><span
-              class="amount">{{ formatEGP(i.details.taxes.fixed_tax) }}</span> <span class="label">ضريبه نوعيه</span></div>
-          <div v-if="i.details?.taxes?.issue_fees" class="w-full d-flex w-100 justify-content-between"><span
-              class="amount">{{ formatEGP(i.details.taxes.issue_fees) }}</span> <span class="label">مصاريف الاصدار</span></div>
-          <div v-if="i.amount !== 8 && i.details?.taxes?.rounding" class="w-full d-flex w-100 justify-content-between"><span
-              class="amount">{{ formatEGP(i.details.taxes.rounding) }}</span> <span class="label">فرق التقريب</span></div>
-          <div v-if="i.amount !== 8 && i.details?.taxes?.TotalTax" class="w-full d-flex w-100 justify-content-between"><span
-              class="amount">{{ formatEGP(i.details.taxes.TotalTax) }}</span> <span class="label">اجمالي الضرائب</span></div>
 
         </div>
       </div>

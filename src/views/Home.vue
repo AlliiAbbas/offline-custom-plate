@@ -41,12 +41,49 @@ import img2 from '../assets/images/Icon4.png'
 import img4 from '../assets/images/Icon2.png'
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useStore } from 'vuex'
+import { saveCustomPlateData, clearCustomPlateData } from '@/utils/indexedDB'
 
 const router = useRouter()
+const store = useStore()
 const isOnline = ref(navigator.onLine)
 
-const updateOnlineStatus = () => {
+const sanitizeData = (data) => {
+  try {
+    // Convert the data to a plain object that can be stored in IndexedDB
+    return JSON.parse(JSON.stringify(data))
+  } catch (error) {
+    console.error('Error sanitizing data:', error)
+    return null
+  }
+}
+
+const updateOnlineStatus = async () => {
   isOnline.value = navigator.onLine
+  if (isOnline.value) {
+    try {
+      // Clear existing data first
+      await clearCustomPlateData()
+      
+      // Fetch both custom plate and extensions data
+      const [customPlateResponse, extensionsResponse] = await Promise.all([
+        store.dispatch('Vehicle/GetCustomPlate'),
+        store.dispatch('Vehicle/GetCustomPlateExtensions')
+      ])
+
+      // Save both data together
+      await saveCustomPlateData({
+        type: 'customPlateData',
+        data: {
+          customPlate: sanitizeData(customPlateResponse)?.data?.CustomPlate,
+          extensions: sanitizeData(extensionsResponse)?.data?.Extensions
+        },
+        timestamp: new Date().toISOString()
+      })
+    } catch (error) {
+      console.error('Error updating data:', error)
+    }
+  }
 }
 
 // Watch for network status changes
@@ -55,12 +92,16 @@ watch(isOnline, (newStatus) => {
     console.log('You are offline - using offline mode')
   } else {
     console.log('You are online - using online mode')
+    updateOnlineStatus()
   }
 })
 
 onMounted(() => {
   window.addEventListener('online', updateOnlineStatus)
   window.addEventListener('offline', updateOnlineStatus)
+  if (isOnline.value) {
+    updateOnlineStatus()
+  }
 })
 
 onUnmounted(() => {

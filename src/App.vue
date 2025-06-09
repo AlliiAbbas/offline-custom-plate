@@ -11,7 +11,9 @@ import { initDB } from '@/utils/indexedDB'
 import Default from './Layout/Default.vue'
 import Login from './Layout/Login.vue'
 import SyncLoader from './components/SyncLoader.vue'
+import { useStore } from 'vuex'
 
+const store = useStore()  
 const route = useRoute()
 const layout = computed(() => {
   const name = route.meta.layout || 'Default'
@@ -26,5 +28,6 @@ onMounted(async () => {
   } catch (error) {
     console.error('Failed to initialize IndexedDB:', error);
   }
+  store.dispatch('Vehicle/initializeOfflineData');
 });
 </script> 
