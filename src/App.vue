@@ -6,7 +6,6 @@
 <script setup>
 import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { initDB } from '@/utils/indexedDB'
 import { initDB } from './utils/indexedDB'
 
 import Default from './Layout/Default.vue'
