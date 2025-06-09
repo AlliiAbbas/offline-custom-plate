@@ -11,7 +11,7 @@
             <div class="w-full d-flex w-100 justify-content-between"><span
                 class="amount">{{ e?.details?.range }}</span> <span class="label">المدة</span>
             </div>
-           
+
             <div class="w-full d-flex w-100 justify-content-between"><span
                 class="amount">{{ formatEGP(e?.details?.taxes?.fixed_tax) }}</span> <span class="label">ضريبه نوعيه</span></div>
             <div v-if="i.amount !== 8" class="w-full d-flex w-100 justify-content-between"><span

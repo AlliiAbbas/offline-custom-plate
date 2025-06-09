@@ -22,6 +22,7 @@ watch(isOnline, async (newStatus) => {
   if (newStatus) {
     isLoading.value = true;
     try {
+      console.log('asdasd');
       await store.dispatch('Vehicle/syncOfflineData');
       console.log('Data synchronized successfully');
     } catch (error) {
@@ -34,11 +35,17 @@ watch(isOnline, async (newStatus) => {
 
 // Add event listeners for online/offline status
 onMounted(() => {
+  console.log('asdasd');
+
   window.addEventListener('online', () => {
     isOnline.value = true;
+    console.log('asdasd');
+
   });
   window.addEventListener('offline', () => {
     isOnline.value = false;
+    console.log('يسي');
+
   });
 });
 </script>

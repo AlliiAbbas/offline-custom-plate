@@ -47,8 +47,8 @@ const initialLoading = ref(true)
 const closePopUp = () => {
 
   openModal.value = false
-  // store.dispatch('Vehicle/setUserData' , null)
-  // router.push({name:'OfflinePlate'})
+  store.dispatch('Vehicle/setUserData' , null)
+  router.push({name:'OfflinePlate'})
 
 }
 function calculate() {
@@ -96,11 +96,12 @@ function calculate() {
       store.dispatch('Vehicle/getCalculationsOffline' , body).then((e)=>{
         calculationData.value = e
         extensionsData.value = e
-        openModal.value = true
         loading.value = false
       })
     }
   }else {
+    loading.value = true
+
     const data = vehicleType.value.getVehicleType();
     if(data !== undefined){
       loading.value = true
@@ -113,6 +114,7 @@ function calculate() {
         let user_data = store.getters["Vehicle/getUserData"]
 
         let data2 = {
+          id: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
           plate: user_data?.plateNumber,
           chassis_id: user_data?.chassisNumber,
           motor_id: user_data?.engineNumber,
@@ -142,7 +144,7 @@ function calculate() {
           wt_kg: null,
           extra_size_percent: null,
           wt_extra: null,
-          body_modification_extensions: null,
+          body_modification_extensions: [],
           passengers: null,
           tractor_parts: null,
           vehicle_shape: null,
@@ -155,9 +157,10 @@ function calculate() {
           vehicle_type: null,
           traffic_unit: null,
           insurance_last_vendor: user_data?.lastInsuranceCompany,
+          status:'done'
         }
         let data_to_save = {
-          data: data2,
+          data: JSON.parse(JSON.stringify(data2)),
           timestamp: new Date().toISOString()
         }
         console.log('Attempting to save data:', data_to_save);
@@ -168,8 +171,13 @@ function calculate() {
           store.dispatch('Vehicle/resyncCustomPlate', [data2])
               .then(response => {
                 console.log('Data synced successfully with server:', response);
+                openModal.value = true
+                loading.value = false
+
               })
               .catch(error => {
+                loading.value = false
+
                 console.error('Error syncing with server:', error);
                 // If API call fails, save to IndexedDB as fallback
                 saveData(data_to_save)
@@ -182,11 +190,17 @@ function calculate() {
               });
         } else {
           // Offline - save to IndexedDB
+
           saveData(data_to_save)
               .then((result) => {
                 console.log('Data saved successfully to IndexedDB with ID:', result);
+                openModal.value = true
+                loading.value = false
+
               })
               .catch(error => {
+                loading.value = false
+
                 console.error('Error saving data to IndexedDB:', error);
                 // Try to save again after a short delay
                 setTimeout(() => {
@@ -199,8 +213,8 @@ function calculate() {
                       });
                 }, 1000);
               });
+
         }
-        openModal.value = true
         loading.value = false
 
       })

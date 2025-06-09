@@ -30,6 +30,7 @@
             </div>
           </header>
     </div>
+    <sync-loader />
   </section>
 </template>
 
@@ -43,6 +44,7 @@ import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useStore } from 'vuex'
 import { saveCustomPlateData, clearCustomPlateData } from '@/utils/indexedDB'
+import SyncLoader from "@/components/SyncLoader.vue";
 
 const router = useRouter()
 const store = useStore()

@@ -5,7 +5,7 @@
       <RouterView />
     </div>
     <VerticalNavbar/>
-    <SyncLoader />
+
 
   </div>
 </template>

@@ -166,19 +166,16 @@
             <div class="col-md-6">
               <div class="form-group">
                 <label class="form-label fw-medium mb-2">رقم اللوحة</label>
-                <div class="d-flex gap-2 flex-wrap">
-                  <input
-                      v-for="(char, index) in formData.plateNumber"
-                      :key="index"
-                      v-model="formData.plateNumber[index]"
-                      type="text"
-                      maxlength="1"
-                      class="form-control text-center plate-box"
-                      :class="validationErrors.plateNumber ? 'is-invalid border-danger' : ''"
-                      @input="(e) => onPlateInput(index, e)"
-                      @keydown.backspace="(e) => onPlateBackspace(index, e)"
-                      ref="plateInputs"
-                  />
+                <input
+                  type="text"
+                  v-model="formData.plateNumber"
+                  class="form-control"
+                  :class="{ 'is-invalid': validationErrors.plateNumber }"
+                  placeholder="مثال: أ ن ع - 9133"
+                  @input="formatPlateNumber"
+                />
+                <div class="invalid-feedback d-block" v-if="validationErrors.plateNumber">
+                  {{ validationErrors.plateNumber }}
                 </div>
               </div>
             </div>
@@ -264,6 +261,8 @@
         </div>
       </div>
     </div>
+    <sync-loader />
+
   </div>
 </template>
 
@@ -271,6 +270,7 @@
 import { ref, nextTick } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
+import SyncLoader from "@/components/SyncLoader.vue";
 const router = useRouter();
 const store = useStore();
 const loading = ref(false);
@@ -284,7 +284,7 @@ const formData = ref({
   model: '',
   manufacturingYear: '',
   licenseType: '',
-  plateNumber:  Array(7).fill(''),
+  plateNumber: '',
   chassisNumber: '',
   engineNumber: '',
   cylinders: '',
@@ -292,7 +292,6 @@ const formData = ref({
   phoneNumber: '',
   vehicle_color: '',
 });
-const plateInputs = ref([]);
 
 const validationErrors = ref({});
 
@@ -309,27 +308,15 @@ function filterNumbersOnly(event) {
   formData.phoneNumber = filtered
 }
 
-const onPlateInput = async (index, event) => {
-  const value = event.target.value.toUpperCase();
-
-  if (/^[\u0600-\u06FFA-Z0-9]$/.test(value)) {
-    formData.value.plateNumber[index] = value;
-
-    await nextTick();
-    if (index < plateInputs.value.length - 1) {
-      plateInputs.value[index + 1].focus();
-    }
-  } else {
-    formData.value.plateNumber[index] = '';
-  }
+const formatPlateNumber = (event) => {
+  let value = event.target.value.toUpperCase();
+  // Remove any non-Arabic letters, numbers, and spaces
+  value = value.replace(/[^ء-ي0-9\s-]/g, '');
+  // Ensure proper spacing around the dash
+  value = value.replace(/\s*-\s*/g, ' - ');
+  formData.value.plateNumber = value;
 };
 
-const onPlateBackspace = async (index, event) => {
-  if (!formData.value.plateNumber[index] && index > 0) {
-    await nextTick();
-    plateInputs.value[index - 1].focus();
-  }
-};
 const validateForm = () => {
   validationErrors.value = {};
   let isValid = true;
@@ -389,11 +376,10 @@ const validateForm = () => {
     validationErrors.value.licenseType = 'نوع الترخيص مطلوب';
     isValid = false;
   }
-  const filledPlateChars = formData.value.plateNumber.filter(char => char.trim() !== '');
-  if (filledPlateChars.length < 5) {
-    validationErrors.value.plateNumber = 'يرجى إدخال 5 خانات على الأقل من رقم اللوحة';
+  if (!formData.value.plateNumber.trim()) {
+    validationErrors.value.plateNumber = 'رقم اللوحة مطلوب';
     isValid = false;
-  } else {
+  }  else {
     validationErrors.value.plateNumber = '';
   }
   if (!formData.value.chassisNumber.trim()) {

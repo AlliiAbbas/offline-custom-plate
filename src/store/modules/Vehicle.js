@@ -2,7 +2,7 @@ import offlineCalculations from "../../calculations/offline_calculations";
 import {vehiclesType} from '../../seeder/vehiclesTypeOffline'
 import {custom_extensions_offline} from '../../seeder/customExtensionsOffline'
 import vehicle_api from '../../api/vehicle_api';
-import { initCustomPlateDB } from '../../utils/indexedDB';
+import { initCustomPlateDB, initDB } from '../../utils/indexedDB';
 
 const state = {
     vehicles_type_offline:vehiclesType,
@@ -57,7 +57,7 @@ const actions = {
                 }
 
                 // Get all data from IndexedDB
-                const db = await initCustomPlateDB();
+                const db = await initDB();
                 const transaction = db.transaction(['calculations'], 'readonly');
                 const store = transaction.objectStore('calculations');
                 const request = store.getAll();
