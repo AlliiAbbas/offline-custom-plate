@@ -4,6 +4,9 @@
       <h2 class="table-title text-end w-100">جدول تأمين السيارات</h2>
     </div>
     <div class="table-wrapper">
+      <button @click="syncData" color="danger" class="px-4 m-2 rounded-2 bg-danger border-0 text-white">
+        مزامنة البيانات
+      </button>
       <ReportsTable ref="reportsTable" />
     </div>
     <div class="pagination-wrapper">
@@ -13,6 +16,7 @@
         @page-changed="handlePageChange"
       />
     </div>
+    <SyncLoader ref="loaderSync"/>
   </div>
 </template>
 
@@ -20,11 +24,18 @@
 import { ref, onMounted, watch } from 'vue'
 import ReportsTable from './ReportsTable.vue'
 import TablePagination from './TablePagination.vue'
+import SyncLoader from "@/components/SyncLoader.vue";
 
 const reportsTable = ref(null)
+const loaderSync = ref(null)
 const totalItems = ref(0)
 const pageSize = ref(10)
 
+const syncData = () => {
+  if (loaderSync.value) {
+    loaderSync.value.syncData(true)
+  }
+}
 const handlePageChange = (page) => {
   if (reportsTable.value) {
     reportsTable.value.updatePage(page)

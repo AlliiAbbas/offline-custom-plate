@@ -78,18 +78,18 @@ const actions = {
                     });
 
                     // Send to API
-                    try {
-                        const response = await dispatch('resyncCustomPlate', policies);
-                        
-                        // If successful, clear the IndexedDB store
-                        const clearTransaction = db.transaction(['calculations'], 'readwrite');
-                        const clearStore = clearTransaction.objectStore('calculations');
-                        await clearStore.clear();
-                        
-                        resolve(response);
-                    } catch (error) {
-                        reject(error);
-                    }
+                        const response = await dispatch('resyncCustomPlate', policies).then(async () => {
+                            // If successful, clear the IndexedDB store
+                            const clearTransaction = db.transaction(['calculations'], 'readwrite');
+                            const clearStore = clearTransaction.objectStore('calculations');
+                            await clearStore.clear();
+                            resolve(response);
+
+                        }).catch((error)=>{
+                            reject(error);
+                        })
+
+
                 };
 
                 request.onerror = () => {

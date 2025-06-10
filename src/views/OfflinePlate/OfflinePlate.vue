@@ -166,16 +166,19 @@
             <div class="col-md-6">
               <div class="form-group">
                 <label class="form-label fw-medium mb-2">رقم اللوحة</label>
-                <input
-                  type="text"
-                  v-model="formData.plateNumber"
-                  class="form-control"
-                  :class="{ 'is-invalid': validationErrors.plateNumber }"
-                  placeholder="مثال: أ ن ع - 9133"
-                  @input="formatPlateNumber"
-                />
-                <div class="invalid-feedback d-block" v-if="validationErrors.plateNumber">
-                  {{ validationErrors.plateNumber }}
+                <div class="d-flex gap-2 flex-wrap">
+                  <input
+                      v-for="(_, index) in 7"
+                      :key="index"
+                      :value="formData.plateNumber.split(' ')[index] || ''"
+                      type="text"
+                      maxlength="1"
+                      class="form-control text-center plate-box"
+                      :class="validationErrors.plateNumber ? 'is-invalid border-danger' : ''"
+                      @input="(e) => onPlateInput(index, e)"
+                      @keydown.backspace="(e) => onPlateBackspace(index, e)"
+                      ref="plateInputs"
+                  />
                 </div>
               </div>
             </div>
@@ -292,6 +295,7 @@ const formData = ref({
   phoneNumber: '',
   vehicle_color: '',
 });
+const plateInputs = ref([]);
 
 const validationErrors = ref({});
 
@@ -316,7 +320,31 @@ const formatPlateNumber = (event) => {
   value = value.replace(/\s*-\s*/g, ' - ');
   formData.value.plateNumber = value;
 };
+const onPlateInput = async (index, event) => {
+  const value = event.target.value.toUpperCase();
+  if (/^[\u0600-\u06FFA-Z0-9]$/.test(value)) {
+    const currentPlate = formData.value.plateNumber.split('').filter(char => char !== ' ');
+    currentPlate[index] = value;
+    formData.value.plateNumber = currentPlate.join(' ');
 
+    await nextTick();
+    if (index < 6) {
+      plateInputs.value[index + 1].focus();
+    }
+  } else {
+    const currentPlate = formData.value.plateNumber.split('').filter(char => char !== ' ');
+    currentPlate[index] = '';
+    formData.value.plateNumber = currentPlate.join(' ');
+  }
+};
+
+const onPlateBackspace = async (index, event) => {
+  const currentPlate = formData.value.plateNumber.split('').filter(char => char !== ' ');
+  if (!currentPlate[index] && index > 0) {
+    await nextTick();
+    plateInputs.value[index - 1].focus();
+  }
+};
 const validateForm = () => {
   validationErrors.value = {};
   let isValid = true;
@@ -335,8 +363,20 @@ const validateForm = () => {
   if (!formData.value.nationalId.trim()) {
     validationErrors.value.nationalId = 'الرقم القومي / جواز السفر  مطلوب';
     isValid = false;
-  } else  {
-    validationErrors.value.nationalId = '';
+  } else {
+    // Check if input contains only numbers
+    if (/^\d+$/.test(formData.value.nationalId)) {
+      // If only numbers, must be exactly 14 digits
+      if (formData.value.nationalId.length !== 14) {
+        validationErrors.value.nationalId = 'الرقم القومي يجب أن يكون 14 رقم';
+        isValid = false;
+      } else {
+        validationErrors.value.nationalId = '';
+      }
+    } else {
+      // If contains letters, treat as passport number (no length restriction)
+      validationErrors.value.nationalId = '';
+    }
   }
   if (!formData.value.phoneNumber.trim()) {
     validationErrors.value.phoneNumber = 'رقم التليفون مطلوب';
@@ -376,11 +416,9 @@ const validateForm = () => {
     validationErrors.value.licenseType = 'نوع الترخيص مطلوب';
     isValid = false;
   }
-  if (!formData.value.plateNumber.trim()) {
+  if (!formData.value.plateNumber) {
     validationErrors.value.plateNumber = 'رقم اللوحة مطلوب';
     isValid = false;
-  }  else {
-    validationErrors.value.plateNumber = '';
   }
   if (!formData.value.chassisNumber.trim()) {
     validationErrors.value.chassisNumber = 'رقم الشاسيه مطلوب';
