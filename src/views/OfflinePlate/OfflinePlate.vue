@@ -14,7 +14,9 @@
                 <input
                   type="text"
                   v-model="formData.ownerName"
-                  @input="filterTextOnly"
+                  @input="filterInput"
+                  name="ownerName"
+                  data-filter="text"
                   class="form-control"
                   :class="{ 'is-invalid': validationErrors.ownerName }"
                   placeholder="اسم المالك"
@@ -75,7 +77,9 @@
                 <input
                     type="text"
                     v-model="formData.phoneNumber"
-                    @input="filterNumbersOnly"
+                    @input="filterInput"
+                    name="phoneNumber"
+                    data-filter="number"
                     class="form-control"
                     :class="{ 'is-invalid': validationErrors.phoneNumber }"
                     placeholder="رقم تليفون المالك"
@@ -141,6 +145,9 @@
                     class="form-control"
                     :class="{ 'is-invalid': validationErrors.vehicle_color }"
                     placeholder="ادخل لون المركبة"
+                    @input="filterInput"
+                    name="vehicle_color"
+                    data-filter="text"
                 />
                 <div class="invalid-feedback d-block" v-if="validationErrors.vehicle_color">
                   {{ validationErrors.vehicle_color }}
@@ -153,7 +160,9 @@
                 <input
                   type="text"
                   v-model="formData.licenseType"
-                  @input="filterTextOnly"
+                  @input="filterInput"
+                  name="licenseType"
+                  data-filter="text"
                   class="form-control"
                   :class="{ 'is-invalid': validationErrors.licenseType }"
                   placeholder="نوع الترخيص"
@@ -218,7 +227,9 @@
                 <input
                     type="text"
                     v-model="formData.cylinders"
-                    @input="filterNumbersOnly"
+                    @input="filterInput"
+                    name="cylinders"
+                    data-filter="number"
                     class="form-control"
                     :class="{ 'is-invalid': validationErrors.cylinders }"
                     placeholder="السلندرات"
@@ -237,7 +248,9 @@
                     class="form-control"
                     :class="{ 'is-invalid': validationErrors.lastInsuranceCompany }"
                     placeholder="آخر شركة تأمين"
-                    @input="filterTextOnly"
+                    @input="filterInput"
+                    name="lastInsuranceCompany"
+                    data-filter="text"
                 />
                 <div class="invalid-feedback d-block" v-if="validationErrors.lastInsuranceCompany">
                   {{ validationErrors.lastInsuranceCompany }}
@@ -299,24 +312,29 @@ const plateInputs = ref([]);
 
 const validationErrors = ref({});
 
-function filterTextOnly(event) {
-  const input = event.target.value
-  const filtered = input.replace(/[^ء-يa-zA-Z\s]/g, '')
-  event.target.value = filtered
-  formData.ownerName = filtered
+function filterInput(event) {
+  const inputEl = event.target;
+  const filterType = inputEl.dataset.filter;
+  const fieldName = inputEl.name;
+  let value = inputEl.value;
+
+  if (filterType === 'text') {
+    value = value.replace(/[^ء-يa-zA-Z\s]/g, '');
+  } else if (filterType === 'number') {
+    value = value.replace(/[^0-9]/g, '');
+  }
+
+  inputEl.value = value;
+
+  if (fieldName && formData.value.hasOwnProperty(fieldName)) {
+    formData.value[fieldName] = value;
+  }
 }
-function filterNumbersOnly(event) {
-  const input = event.target.value
-  const filtered = input.replace(/[^0-9]/g, '')
-  event.target.value = filtered
-  formData.phoneNumber = filtered
-}
+
 
 const formatPlateNumber = (event) => {
   let value = event.target.value.toUpperCase();
-  // Remove any non-Arabic letters, numbers, and spaces
   value = value.replace(/[^ء-ي0-9\s-]/g, '');
-  // Ensure proper spacing around the dash
   value = value.replace(/\s*-\s*/g, ' - ');
   formData.value.plateNumber = value;
 };
