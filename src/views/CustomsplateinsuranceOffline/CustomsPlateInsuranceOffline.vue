@@ -45,13 +45,16 @@ const openModal= ref(false)
 const loading = ref(false)
 const initialLoading = ref(true)
 const closePopUp = () => {
-
   openModal.value = false
   store.dispatch('Vehicle/setUserData' , null)
   router.push({name:'OfflinePlate'})
 
 }
 function calculate() {
+  let user_data1 = store.getters["Vehicle/getUserData"]
+  if(user_data1 === null){
+    router.push({name:'OfflinePlate'})
+  }else {
   calculationData.value = null
   extensionsData.value = []
   openModal.value = false
@@ -85,7 +88,7 @@ function calculate() {
         }
 
       })
-      let body = {
+      let body= {
         vehicle_type:data2.CustomPlate,
         fuel_type:'بنزين',
         to_date:data2.to_date,
@@ -97,7 +100,117 @@ function calculate() {
         calculationData.value = e
         extensionsData.value = e
         loading.value = false
+        openModal.value = true
+        let user_data = store.getters["Vehicle/getUserData"]
+
+        let data2 = {
+          id: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
+          plate: user_data?.plateNumber,
+          chassis_id: user_data?.chassisNumber,
+          motor_id: user_data?.engineNumber,
+          producer: user_data?.brand,
+          model: user_data?.model,
+          year: user_data?.manufacturingYear,
+          from_date: body?.from_date,
+          to_date: body.to_date,
+          issued_at: '',
+          insurance_state: '',
+          owner_name: user_data?.ownerName,
+          owner_national_id: user_data?.nationalId,
+          owner_address: user_data?.address,
+          owner_job: user_data?.job,
+          owner_phone: user_data?.phoneNumber,
+          net_premium: e.base_price,
+          tax: e.taxes.total,
+          stamp: e.taxes.stamp_tax,
+          issue_fees: e.issue_fees,
+          total_sum: e.final_total,
+          vehicle_license_type_id: null,
+          motor_cc: null,
+          cylinders: user_data.cylinders,
+          fuel_type_id: body.fuel_type,
+          vehicle_color: body.vehicle_color,
+          vehicle_kg: null,
+          wt_kg: null,
+          extra_size_percent: null,
+          wt_extra: null,
+          body_modification_extensions: [],
+          passengers: null,
+          tractor_parts: null,
+          vehicle_shape: null,
+          attach_type: null,
+          attach_to_date: null,
+          attach_serial: null,
+          Insurance_entity: null,
+          region: null,
+          policy_status: null,
+          vehicle_type: null,
+          traffic_unit: null,
+          insurance_last_vendor: user_data?.lastInsuranceCompany,
+          status:'done'
+        }
+        let data_to_save = {
+          data: JSON.parse(JSON.stringify(data2)),
+          timestamp: new Date().toISOString()
+        }
+        console.log('Attempting to save data:', data_to_save);
+
+        // Check network status and handle accordingly
+        if (navigator.onLine) {
+          // Online - call API
+          store.dispatch('Vehicle/resyncCustomPlate', [data2])
+              .then(response => {
+                console.log('Data synced successfully with server:', response);
+                openModal.value = true
+                loading.value = false
+
+              })
+              .catch(error => {
+                console.log(error);
+                loading.value = false
+
+                console.error('Error syncing with server:', error);
+                // If API call fails, save to IndexedDB as fallback
+                saveData(data_to_save)
+                    .then((result) => {
+                      console.log('Data saved to IndexedDB as fallback with ID:', result);
+                    })
+                    .catch(indexedDBError => {
+                      console.error('Error saving to IndexedDB:', indexedDBError);
+                    });
+              });
+        } else {
+          // Offline - save to IndexedDB
+
+          saveData(data_to_save)
+              .then((result) => {
+                console.log('Data saved successfully to IndexedDB with ID:', result);
+                openModal.value = true
+                loading.value = false
+
+
+              })
+              .catch(error => {
+                console.log(error);
+                loading.value = false
+
+                console.error('Error saving data to IndexedDB:', error);
+                // Try to save again after a short delay
+                setTimeout(() => {
+                  saveData(data_to_save)
+                      .then((result) => {
+                        console.log('Data saved successfully on retry with ID:', result);
+                      })
+                      .catch(retryError => {
+                        console.error('Error saving data on retry:', retryError);
+                      });
+                }, 1000);
+              });
+
+        }
+
       })
+
     }
   }else {
     loading.value = true
@@ -176,6 +289,7 @@ function calculate() {
 
               })
               .catch(error => {
+                console.log(error);
                 loading.value = false
 
                 console.error('Error syncing with server:', error);
@@ -197,8 +311,10 @@ function calculate() {
                 openModal.value = true
                 loading.value = false
 
+
               })
               .catch(error => {
+                console.log(error);
                 loading.value = false
 
                 console.error('Error saving data to IndexedDB:', error);
@@ -219,6 +335,7 @@ function calculate() {
 
       })
     }
+  }
   }
 }
 

@@ -45,28 +45,19 @@ const syncData = async (newStatus) => {
   }
 }
 
-// Watch for online status changes
-watch(isOnline, async (newStatus) => {
-  await syncData(newStatus)
-});
+
 
 defineExpose({
   syncData
 });
 
-// Add event listeners for online/offline status
 onMounted(() => {
-  console.log('asdasd');
 
   window.addEventListener('online', () => {
     isOnline.value = true;
-    console.log('asdasd');
-
   });
   window.addEventListener('offline', () => {
     isOnline.value = false;
-    console.log('يسي');
-
   });
 });
 </script>

@@ -1,9 +1,10 @@
 <template>
   <section class="total-section">
     <div class="amount-container">
+
       <div class="amount-details">
         <span class="currency-text"> جنيه</span>
-        <span class="total-amount">{{ formatEGP(payload?.final_total + payload?.extensions_total) }}</span>
+        <span class="total-amount">{{ formatEGP(payload?.final_total ) }}</span>
       </div>
       <div class="label-container">
         <div class="currency-label">

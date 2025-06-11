@@ -42,7 +42,7 @@
           <td class="py-3">{{ row.net_premium }}</td>
           <td class="py-3">{{ row.total_sum }}</td>
           <td class="py-3">
-            <span :class="getStatusClass(row.status)">{{ row.status || 'نشط' }}</span>
+            <span :class="getStatusClass(row.status)">{{ row.status=== 'cancel' ? ' مُلْغى' : 'نشط' }}</span>
           </td>
           <td class="py-3">
             <button 

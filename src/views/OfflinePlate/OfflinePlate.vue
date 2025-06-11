@@ -175,20 +175,36 @@
             <div class="col-md-6">
               <div class="form-group">
                 <label class="form-label fw-medium mb-2">رقم اللوحة</label>
-                <div class="d-flex gap-2 flex-wrap">
+                <div class="d-flex gap-2 flex-wrap align-items-center">
                   <input
-                      v-for="(_, index) in 7"
+                      v-for="(char, index) in plateChars.slice(0, 3)"
                       :key="index"
-                      :value="formData.plateNumber.split(' ')[index] || ''"
+                      v-model="plateChars[index]"
                       type="text"
                       maxlength="1"
-                      class="form-control text-center plate-box"
-                      :class="validationErrors.plateNumber ? 'is-invalid border-danger' : ''"
+                      placeholder="أ"
+                      class="form-control text-danger text-center plate-box"
                       @input="(e) => onPlateInput(index, e)"
                       @keydown.backspace="(e) => onPlateBackspace(index, e)"
                       ref="plateInputs"
                   />
+                  <div class="plate-separator mx-1"></div>
+                  <input
+                      v-for="(char, index) in plateChars.slice(3)"
+                      :key="index + 3"
+                      v-model="plateChars[index + 3]"
+                      type="text"
+                      maxlength="1"
+                      placeholder="1"
+                      class="form-control text-danger text-center plate-box"
+                      @input="(e) => onPlateInput(index + 3, e)"
+                      @keydown.backspace="(e) => onPlateBackspace(index + 3, e)"
+                      ref="plateInputs"
+                  />
                 </div>
+                <p class="text-danger" v-if="validationErrors.plateNumber">
+                  {{ validationErrors.plateNumber }}
+                </p>
               </div>
             </div>
             <div class="col-md-6">
@@ -259,9 +275,6 @@
             </div>
           </div>
 
-
-
-
           <footer class="card-footer bg-white d-flex justify-content-end border-top rounded-bottom py-3 mt-4">
             <button class="btn btn-danger rounded-3 py-2 fw-bold" style="width: 300px;" :disabled="loading" type="submit">
               <span v-if="!loading">التالي</span>
@@ -277,8 +290,6 @@
         </div>
       </div>
     </div>
-    <sync-loader />
-
   </div>
 </template>
 
@@ -300,7 +311,7 @@ const formData = ref({
   model: '',
   manufacturingYear: '',
   licenseType: '',
-  plateNumber: '',
+  plateNumber: '       ',
   chassisNumber: '',
   engineNumber: '',
   cylinders: '',
@@ -309,6 +320,7 @@ const formData = ref({
   vehicle_color: '',
 });
 const plateInputs = ref([]);
+const plateChars = ref(['', '', '', '', '', '', '']);
 
 const validationErrors = ref({});
 
@@ -331,7 +343,6 @@ function filterInput(event) {
   }
 }
 
-
 const formatPlateNumber = (event) => {
   let value = event.target.value.toUpperCase();
   value = value.replace(/[^ء-ي0-9\s-]/g, '');
@@ -340,27 +351,44 @@ const formatPlateNumber = (event) => {
 };
 const onPlateInput = async (index, event) => {
   const value = event.target.value.toUpperCase();
-  if (/^[\u0600-\u06FFA-Z0-9]$/.test(value)) {
-    const currentPlate = formData.value.plateNumber.split('').filter(char => char !== ' ');
-    currentPlate[index] = value;
-    formData.value.plateNumber = currentPlate.join(' ');
-
-    await nextTick();
-    if (index < 6) {
-      plateInputs.value[index + 1].focus();
+  
+  // Handle first 3 positions (Arabic letters)
+  if (index < 3) {
+    if (/^[\u0600-\u06FF]$/.test(value)) {
+      plateChars.value[index] = value;
+      formData.value.plateNumber = plateChars.value.join('');
+      if (index < 2) {
+        await nextTick();
+        plateInputs.value[index + 1].focus();
+      }
+    } else {
+      event.target.value = plateChars.value[index];
     }
-  } else {
-    const currentPlate = formData.value.plateNumber.split('').filter(char => char !== ' ');
-    currentPlate[index] = '';
-    formData.value.plateNumber = currentPlate.join(' ');
+  }
+  // Handle last 4 positions (numbers)
+  else {
+    if (/^\d$/.test(value)) {
+      plateChars.value[index] = value;
+      formData.value.plateNumber = plateChars.value.join('');
+      if (index < 6) {
+        await nextTick();
+        plateInputs.value[index + 1].focus();
+      }
+    } else {
+      event.target.value = plateChars.value[index];
+    }
   }
 };
 
 const onPlateBackspace = async (index, event) => {
-  const currentPlate = formData.value.plateNumber.split('').filter(char => char !== ' ');
-  if (!currentPlate[index] && index > 0) {
-    await nextTick();
-    plateInputs.value[index - 1].focus();
+  if (event.key === 'Backspace') {
+    plateChars.value[index] = '';
+    formData.value.plateNumber = plateChars.value.join('');
+    
+    if (index > 0) {
+      await nextTick();
+      plateInputs.value[index - 1].focus();
+    }
   }
 };
 const validateForm = () => {
@@ -458,6 +486,23 @@ const validateForm = () => {
     isValid = false;
   }
 
+  // Plate number validation
+  const plateChars = formData.value.plateNumber.split('').filter(char => char !== ' ');
+  const firstThree = plateChars.slice(0, 3).join('');
+  const lastFour = plateChars.slice(3).join('');
+
+  // Check first 3 positions (2-3 Arabic letters)
+  if (!/^[\u0600-\u06FF]{2,3}$/.test(firstThree)) {
+    validationErrors.value.plateNumber = 'يجب إدخال حرفين أو ثلاثة حروف عربية في البداية';
+    isValid = false;
+  }
+
+  // Check last 4 positions (must be numbers)
+  if (!/^\d{4}$/.test(lastFour)) {
+    validationErrors.value.plateNumber = 'يجب إدخال أربعة أرقام في النهاية';
+    isValid = false;
+  }
+
   return isValid;
 };
 
@@ -475,7 +520,6 @@ const handleSubmit = async () => {
   }
 }
 
-
 </script>
 
 <style scoped>
@@ -487,6 +531,14 @@ const handleSubmit = async () => {
   padding: 0;
   text-align: center;
 }
+
+.plate-separator {
+  width: 2px;
+  height: 40px;
+  background-color: #000;
+  border-radius: 2px;
+}
+
 .form-control:focus {
   border-color: #dc3545;
   box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25);

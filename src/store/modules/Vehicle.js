@@ -78,7 +78,7 @@ const actions = {
                     });
 
                     // Send to API
-                        const response = await dispatch('resyncCustomPlate', policies).then(async () => {
+                        await dispatch('resyncCustomPlate', policies).then(async (response) => {
                             // If successful, clear the IndexedDB store
                             const clearTransaction = db.transaction(['calculations'], 'readwrite');
                             const clearStore = clearTransaction.objectStore('calculations');
