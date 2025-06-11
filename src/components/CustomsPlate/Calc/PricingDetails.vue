@@ -37,18 +37,18 @@
 
             <div class="w-full d-flex w-100 justify-content-between"><span
                 class="amount">{{ formatEGP(i?.details?.taxes?.fixed_tax) }}</span> <span class="label">ضريبه نوعيه</span></div>
-            <div v-if="i.amount !== 8" class="w-full d-flex w-100 justify-content-between"><span
-                class="amount">{{ formatEGP(i?.details?.raw_amount) }}</span> <span class="label">القسط الصافي</span></div>
+            <div class="w-full d-flex w-100 justify-content-between"><span
+                class="amount">{{ i?.details?.raw_amount === undefined ? 0 : formatEGP(i?.details?.raw_amount) }}</span> <span class="label">القسط الصافي</span></div>
             <div  class="w-full d-flex w-100 justify-content-between"><span
                 class="amount">{{ formatEGP(i?.details?.taxes?.issue_fees) }}</span> <span class="label">مصاريف الاصدار</span></div>
-            <div v-if="i.amount !== 8" class="w-full d-flex w-100 justify-content-between"><span
-                class="amount">{{ formatEGP(i?.details?.taxes?.rounding) }}</span> <span class="label">فرق التقريب</span></div>
+            <div  class="w-full d-flex w-100 justify-content-between"><span
+                class="amount">{{ i?.details?.taxes?.rounding === undefined ? 0 : formatEGP(i?.details?.taxes?.rounding) }}</span> <span class="label">فرق التقريب</span></div>
             <div class="w-full d-flex w-100 justify-content-between">
-              <span class="amount">{{ formatEGP(i?.amount) }}</span>
+              <span class="amount">{{ formatEGP(i?.amount) }} </span>
               <span class="label">اجمالي المستحق علي الملحق</span>
             </div>
-            <div v-if="i.amount !== 8" class="w-full d-flex w-100 justify-content-between"><span
-                class="amount">{{ formatEGP(i?.details?.taxes?.TotalTax) }}</span> <span class="label">اجمالي الضرائب</span>
+            <div  class="w-full d-flex w-100 justify-content-between"><span
+                class="amount">{{ i?.details?.taxes?.TotalTax === undefined ? 0 : formatEGP(i?.details?.taxes?.TotalTax)}}</span> <span class="label">اجمالي الضرائب</span>
             </div>
           </div>
 

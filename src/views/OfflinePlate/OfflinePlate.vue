@@ -182,7 +182,7 @@
                       v-model="plateChars[index]"
                       type="text"
                       maxlength="1"
-                      placeholder="أ"
+                      :placeholder="['ا', 'ب', 'ج'][index]"
                       class="form-control text-danger text-center plate-box"
                       @input="(e) => onPlateInput(index, e)"
                       @keydown.backspace="(e) => onPlateBackspace(index, e)"
@@ -195,7 +195,7 @@
                       v-model="plateChars[index + 3]"
                       type="text"
                       maxlength="1"
-                      placeholder="1"
+                      :placeholder="['1', '2', '3' ,'4'][index]"
                       class="form-control text-danger text-center plate-box"
                       @input="(e) => onPlateInput(index + 3, e)"
                       @keydown.backspace="(e) => onPlateBackspace(index + 3, e)"
@@ -297,7 +297,6 @@
 import { ref, nextTick } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
-import SyncLoader from "@/components/SyncLoader.vue";
 const router = useRouter();
 const store = useStore();
 const loading = ref(false);
@@ -356,7 +355,11 @@ const onPlateInput = async (index, event) => {
   if (index < 3) {
     if (/^[\u0600-\u06FF]$/.test(value)) {
       plateChars.value[index] = value;
-      formData.value.plateNumber = plateChars.value.join('');
+      // Update formData with non-empty characters only
+      const firstPart = plateChars.value.slice(0, 3).filter(char => char !== '').join('');
+      const lastPart = plateChars.value.slice(3).filter(char => char !== '').join('');
+      formData.value.plateNumber = firstPart + lastPart;
+      
       if (index < 2) {
         await nextTick();
         plateInputs.value[index + 1].focus();
@@ -369,7 +372,11 @@ const onPlateInput = async (index, event) => {
   else {
     if (/^\d$/.test(value)) {
       plateChars.value[index] = value;
-      formData.value.plateNumber = plateChars.value.join('');
+      // Update formData with non-empty characters only
+      const firstPart = plateChars.value.slice(0, 3).filter(char => char !== '').join('');
+      const lastPart = plateChars.value.slice(3).filter(char => char !== '').join('');
+      formData.value.plateNumber = firstPart + lastPart;
+      
       if (index < 6) {
         await nextTick();
         plateInputs.value[index + 1].focus();
@@ -383,7 +390,10 @@ const onPlateInput = async (index, event) => {
 const onPlateBackspace = async (index, event) => {
   if (event.key === 'Backspace') {
     plateChars.value[index] = '';
-    formData.value.plateNumber = plateChars.value.join('');
+    // Update formData with non-empty characters only
+    const firstPart = plateChars.value.slice(0, 3).filter(char => char !== '').join('');
+    const lastPart = plateChars.value.slice(3).filter(char => char !== '').join('');
+    formData.value.plateNumber = firstPart + lastPart;
     
     if (index > 0) {
       await nextTick();
@@ -487,19 +497,18 @@ const validateForm = () => {
   }
 
   // Plate number validation
-  const plateChars = formData.value.plateNumber.split('').filter(char => char !== ' ');
-  const firstThree = plateChars.slice(0, 3).join('');
-  const lastFour = plateChars.slice(3).join('');
+  const firstPart = plateChars.value.slice(0, 3).filter(char => char !== '').join('');
+  const lastPart = plateChars.value.slice(3).filter(char => char !== '').join('');
 
-  // Check first 3 positions (2-3 Arabic letters)
-  if (!/^[\u0600-\u06FF]{2,3}$/.test(firstThree)) {
+  // Check first part (2-3 Arabic letters)
+  if (!/^[\u0600-\u06FF]{2,3}$/.test(firstPart)) {
     validationErrors.value.plateNumber = 'يجب إدخال حرفين أو ثلاثة حروف عربية في البداية';
     isValid = false;
   }
 
-  // Check last 4 positions (must be numbers)
-  if (!/^\d{4}$/.test(lastFour)) {
-    validationErrors.value.plateNumber = 'يجب إدخال أربعة أرقام في النهاية';
+  // Check last part (3-4 numbers)
+  if (!/^\d{3,4}$/.test(lastPart)) {
+    validationErrors.value.plateNumber = 'يجب إدخال ثلاثة أو أربعة أرقام في النهاية';
     isValid = false;
   }
 

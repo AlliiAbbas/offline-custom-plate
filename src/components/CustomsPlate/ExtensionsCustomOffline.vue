@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="pricing-methods-container">
-      <label class="pricing-methods-label" for="pricingMethods">اختر طرق فرق التسعير</label>
+      <label class="pricing-methods-label" for="pricingMethods">اختر ملحق او اكتر</label>
       <multiselect
           id="pricingMethods"
           v-model="selected"
@@ -11,7 +11,7 @@
           label="name_ar"
           :multiple="true"
           :tag-placeholder="''"
-          placeholder="اختر طرق فرق التسعير"
+          placeholder="اختر ملحق او اكتر"
           :close-on-select="false"
           :clear-on-select="false"
           :preserve-search="true"
