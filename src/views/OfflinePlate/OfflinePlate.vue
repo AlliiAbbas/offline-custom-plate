@@ -28,16 +28,35 @@
             </div>
             <div class="col-md-6">
               <div class="form-group">
-                <label class="form-label fw-medium mb-2">الرقم القومي /  جواز السفر</label>
+                <label class="form-label fw-medium mb-2">الرقم القومي</label>
                 <input
                   type="text"
                   v-model="formData.nationalId"
+                  maxlength="14"
+                  @input="filterInput"
+                  name="nationalId"
+                  data-filter="number"
                   class="form-control"
                   :class="{ 'is-invalid': validationErrors.nationalId }"
-                  placeholder="الرقم القومي /  جواز السفر"
+                  placeholder="الرقم القومي"
                 />
                 <div class="invalid-feedback d-block" v-if="validationErrors.nationalId">
                   {{ validationErrors.nationalId }}
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group">
+                <label class="form-label fw-medium mb-2">جواز السفر</label>
+                <input
+                    type="text"
+                    v-model="formData.passport"
+                    class="form-control"
+                    :class="{ 'is-invalid': validationErrors.passport }"
+                    placeholder="جواز السفر"
+                />
+                <div class="invalid-feedback d-block" v-if="validationErrors.passport">
+                  {{ validationErrors.passport }}
                 </div>
               </div>
             </div>
@@ -304,6 +323,7 @@ const loading = ref(false);
 const formData = ref({
   ownerName: '',
   nationalId: '',
+  passport:'',
   address: '',
   job: '',
   brand: '',
@@ -417,12 +437,10 @@ const validateForm = () => {
     validationErrors.value.vehicle_color = 'لون المركبة يجب أن يكون حروف فقط';
   }
   if (!formData.value.nationalId.trim()) {
-    validationErrors.value.nationalId = 'الرقم القومي / جواز السفر  مطلوب';
+    validationErrors.value.nationalId = 'الرقم القومي مطلوب';
     isValid = false;
   } else {
-    // Check if input contains only numbers
     if (/^\d+$/.test(formData.value.nationalId)) {
-      // If only numbers, must be exactly 14 digits
       if (formData.value.nationalId.length !== 14) {
         validationErrors.value.nationalId = 'الرقم القومي يجب أن يكون 14 رقم';
         isValid = false;
@@ -430,7 +448,6 @@ const validateForm = () => {
         validationErrors.value.nationalId = '';
       }
     } else {
-      // If contains letters, treat as passport number (no length restriction)
       validationErrors.value.nationalId = '';
     }
   }
@@ -447,6 +464,10 @@ const validateForm = () => {
   }
   if (!formData.value.job.trim()) {
     validationErrors.value.job = 'الوظيفة مطلوبة';
+    isValid = false;
+  }
+  if (!formData.value.passport.trim()) {
+    validationErrors.value.passport = 'جواز السفر  مطلوب';
     isValid = false;
   }
   if (!formData.value.brand.trim()) {
