@@ -33,7 +33,7 @@ import {useStore} from "vuex";
 import VehicleTypeOffline from "@/components/CustomsPlate/VehicleTypeOffline.vue";
 import ExtensionsCustomOffline from "@/components/CustomsPlate/ExtensionsCustomOffline.vue";
 import router from "@/router";
-import { saveData } from '@/utils/indexedDB';
+import { saveData, getLastCode, saveLastCode } from '@/utils/indexedDB';
 
 const extensionsData= ref(null)
 const store = useStore()
@@ -96,7 +96,7 @@ function calculate() {
         operation_type:'custom_plate',
         extensions:extensions
       }
-      store.dispatch('Vehicle/getCalculationsOffline' , body).then((e)=>{
+      store.dispatch('Vehicle/getCalculationsOffline' , body).then(async (e) => {
         calculationData.value = e
         extensionsData.value = e
         loading.value = false
@@ -106,6 +106,7 @@ function calculate() {
         let data2 = {
           id: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
           plate: user_data?.plateNumber,
+          code: null,
           chassis_id: user_data?.chassisNumber,
           motor_id: user_data?.engineNumber,
           producer: user_data?.brand,
@@ -147,7 +148,21 @@ function calculate() {
           vehicle_type: null,
           traffic_unit: null,
           insurance_last_vendor: user_data?.lastInsuranceCompany,
-          status:'done'
+          status: 'done'
+        }
+        let user = store.getters["Auth/getUser"]
+        try {
+          const lastCode = await getLastCode();
+          if (!lastCode) {
+            data2.code = user.code;
+            await saveLastCode(user.code);
+          } else {
+            data2.code = lastCode + 1;
+            await saveLastCode(data2.code);
+          }
+        } catch (error) {
+          console.error('Error handling code:', error);
+          data2.code = user.code;
         }
         let data_to_save = {
           data: JSON.parse(JSON.stringify(data2)),
@@ -221,7 +236,7 @@ function calculate() {
       data.operation_type = 'custom_plate'
       data.fuel_type = 'بنزين'
       data.vehicle_type = data.CustomPlate
-      store.dispatch('Vehicle/getCalculationsOffline' , data).then((e)=> {
+      store.dispatch('Vehicle/getCalculationsOffline' , data).then(async (e) => {
         calculationData.value = e
         console.log(e);
         let user_data = store.getters["Vehicle/getUserData"]
@@ -270,7 +285,21 @@ function calculate() {
           vehicle_type: null,
           traffic_unit: null,
           insurance_last_vendor: user_data?.lastInsuranceCompany,
-          status:'done'
+          status: 'done'
+        }
+        let user = store.getters["Auth/getUser"]
+        try {
+          const lastCode = await getLastCode();
+          if (!lastCode) {
+            data2.code = user.code;
+            await saveLastCode(user.code);
+          } else {
+            data2.code = lastCode + 1;
+            await saveLastCode(data2.code);
+          }
+        } catch (error) {
+          console.error('Error handling code:', error);
+          data2.code = user.code;
         }
         let data_to_save = {
           data: JSON.parse(JSON.stringify(data2)),

@@ -124,6 +124,7 @@ const actions = {
     },
     async initializeOfflineData({ commit }) {
         try {
+            console.log('Starting to initialize offline data...');
             const db = await initCustomPlateDB();
             const transaction = db.transaction(['customPlate'], 'readonly');
             const store = transaction.objectStore('customPlate');
@@ -131,6 +132,7 @@ const actions = {
 
             request.onsuccess = () => {
                 const offlineData = request.result;
+                console.log('Retrieved offline data:', offlineData);
                 if (offlineData && offlineData.length > 0) {
                     // Extract customPlate data
                     const customPlateData = offlineData
@@ -142,9 +144,18 @@ const actions = {
                         .filter(item => item.data && item.data.extensions)
                         .map(item => item.data.extensions);
 
+                    console.log('Processed customPlate data:', customPlateData);
+                    console.log('Processed customExtensions data:', customExtensionsData);
+
                     commit('setVehiclesTypeOffline', customPlateData);
                     commit('setCustomExtensionsOffline', customExtensionsData);
+                } else {
+                    console.log('No offline data found in IndexedDB');
                 }
+            };
+
+            request.onerror = (error) => {
+                console.error('Error retrieving offline data:', error);
             };
         } catch (error) {
             console.error('Error initializing offline data:', error);

@@ -40,6 +40,23 @@
       </div>
     </div>
   </div>
+
+  <!-- Clear Data Confirmation Popup -->
+  <div v-if="showClearDataPopup" class="offline-popup-overlay">
+    <div class="offline-popup">
+      <div class="offline-popup-content">
+        <div class="offline-popup-icon">
+          <i class="fas fa-trash"></i>
+        </div>
+        <h3>مسح البيانات</h3>
+        <p>هل تريد مسح البيانات من قاعدة البيانات المحلية؟</p>
+        <div class="popup-buttons">
+          <button @click="clearIndexedDBData" class="offline-popup-button bg-danger">نعم، امسح البيانات</button>
+          <button @click="showClearDataPopup = false" class="offline-popup-button bg-secondary">إلغاء</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
@@ -47,13 +64,14 @@ import { ref, onMounted, watch } from 'vue'
 import * as XLSX from 'xlsx'
 import ReportsTable from './ReportsTable.vue'
 import TablePagination from './TablePagination.vue'
-import SyncLoader from '@/components/SyncLoader.vue'
-
+import SyncLoader from '../../components/SyncLoader.vue'
 const reportsTable = ref(null)
+import {clearTable} from '../../utils/indexedDB'
 const loaderSync = ref(null)
 const totalItems = ref(0)
 const pageSize = ref(10)
 const showOfflinePopup = ref(false)
+const showClearDataPopup = ref(false)
 
 const syncData = () => {
   if (loaderSync.value) {
@@ -75,6 +93,16 @@ const handleSync = () => {
   syncData()
 }
 
+const clearIndexedDBData = async () => {
+  try {
+    await clearTable()
+    showClearDataPopup.value = false
+  } catch (error) {
+    console.error('Error clearing IndexedDB:', error)
+    alert('حدث خطأ أثناء مسح البيانات')
+  }
+}
+
 const exportToExcel = async () => {
   try {
     if (!reportsTable.value?.getAllData) {
@@ -90,25 +118,7 @@ const exportToExcel = async () => {
     }
 
     // Format the data for Excel
-    const formattedData = allData.map(item => ({
-      'اسم المالك': item.owner_name || '',
-      'الرقم القومي': item.owner_national_id || '',
-      'العنوان': item.owner_address || '',
-      'الوظيفه': item.owner_job || '',
-      'الطراز': item.model || '',
-      'سنه الصنع': item.year || '',
-      'رقم اللوحه': item.plate || '',
-      'رقم الشاسيه': item.chassis_id || '',
-      'رقم الموتور': item.motor_id || '',
-      'السلندرات': item.cylinders || '',
-      'نوع الوقود': item.fuel_type_id || '',
-      'اخر شركه تامين': item.insurance_last_vendor || '',
-      'من تاريخ': item.from_date || '',
-      'الى تاريخ': item.to_date || '',
-      'صافي القسط': item.net_premium || '',
-      'الاجمالي': item.total_sum || '',
-      'الحالة': item.status === 'cancel' ? 'مُلْغى' : 'نشط'
-    }))
+    const formattedData = allData
 
     const worksheet = XLSX.utils.json_to_sheet(formattedData)
     const workbook = XLSX.utils.book_new()
@@ -119,6 +129,10 @@ const exportToExcel = async () => {
     worksheet['!cols'] = wscols
 
     XLSX.writeFile(workbook, 'تقرير_تأمين_السيارات.xlsx')
+    
+    // Show confirmation popup after successful export
+    showClearDataPopup.value = true
+    
   } catch (error) {
     console.error('Error exporting to Excel:', error)
     alert('حدث خطأ أثناء تصدير البيانات')
@@ -274,5 +288,33 @@ onMounted(() => {
 
 .offline-popup-button:hover {
   background-color: #c82333;
+}
+
+.popup-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.offline-popup-button {
+  padding: 8px 24px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.2s;
+  color: white;
+}
+
+.offline-popup-button:hover {
+  opacity: 0.9;
+}
+
+.bg-danger {
+  background-color: #dc3545;
+}
+
+.bg-secondary {
+  background-color: #6c757d;
 }
 </style>

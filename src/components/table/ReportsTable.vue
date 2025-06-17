@@ -3,6 +3,7 @@
     <table class="table w-100 table-bordered table-hover bg-white shadow-sm rounded">
       <thead>
         <tr class="align-middle text-center">
+          <th class="bg-light text-secondary py-3 border-bottom-0 sticky-header">رقم الوثيقة</th>
           <th class="bg-light text-secondary py-3 border-bottom-0 sticky-header">اسم المالك</th>
           <th class="bg-light text-secondary py-3 border-bottom-0 sticky-header">الرقم القومي</th>
           <th class="bg-light text-secondary py-3 border-bottom-0 sticky-header">العنوان</th>
@@ -25,6 +26,7 @@
       </thead>
       <tbody>
         <tr v-for="(row, index) in paginatedRows" :key="index" class="align-middle hover-row">
+          <td class="py-3">{{ row.code }}</td>
           <td class="py-3">{{ row.owner_name }}</td>
           <td class="py-3">{{ row.owner_national_id }}</td>
           <td class="py-3">{{ row.owner_address }}</td>

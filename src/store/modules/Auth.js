@@ -1,11 +1,14 @@
-
 import {loginOffline} from "../../seeder/loginOffline"
+import { saveUser, clearUserData, saveLastCode } from "../../utils/indexedDB"
+
 const state = {
     user:null
 }
 
 const mutations = {
-
+    setUser(state, user) {
+        state.user = user
+    }
 }
 
 const actions = {
@@ -19,19 +22,40 @@ const actions = {
                }
             })
             if (auth) {
-                sessionStorage.setItem('token', auth_data.token);
-                sessionStorage.setItem('username', auth_data.username);
-                resolve(true)
+                try {
+                    sessionStorage.setItem('token', auth_data.token);
+                    sessionStorage.setItem('username', auth_data.username);
+                    await saveUser(auth_data);
+                    commit('setUser', auth_data);
+                    resolve(true)
+                } catch (error) {
+                    console.error('Error saving user data:', error);
+                    resolve(false)
+                }
             } else {
                 resolve(false)
             }
         })
     },
 
-    
+    logout: function ({commit}) {
+        return new Promise(async (resolve) => {
+            try {
+                sessionStorage.removeItem('token');
+                sessionStorage.removeItem('username');
+                await clearUserData();
+                commit('setUser', null);
+                resolve(true);
+            } catch (error) {
+                console.error('Error during logout:', error);
+                resolve(false);
+            }
+        });
+    }
 }
 
 const getters = {
+    getUser: (state) => state.user
 }
 
 export default {
