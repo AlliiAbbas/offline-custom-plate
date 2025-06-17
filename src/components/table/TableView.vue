@@ -55,6 +55,50 @@ const totalItems = ref(0)
 const pageSize = ref(10)
 const showOfflinePopup = ref(false)
 
+const fetchAllDataFromIndexedDB = () => {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('customsPlateDB', 1)
+
+    request.onerror = (event) => {
+      console.error('خطأ في فتح قاعدة البيانات', event)
+      reject(event)
+    }
+
+    request.onsuccess = (event) => {
+      const db = event.target.result
+      const transaction = db.transaction(['calculations'], 'readonly')
+      const objectStore = transaction.objectStore('calculations')
+      const getAllRequest = objectStore.getAll()
+
+      getAllRequest.onsuccess = (event) => {
+        const allData = event.target.result
+        const transformedData = allData.map(item => {
+          if (item.owner_name) {
+            return item
+          }
+          if (item.data) {
+            return item.data
+          }
+          return {}
+        })
+        resolve(transformedData)
+      }
+
+      getAllRequest.onerror = (event) => {
+        console.error('خطأ في قراءة البيانات', event)
+        reject(event)
+      }
+    }
+
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result
+      if (!db.objectStoreNames.contains('calculations')) {
+        db.createObjectStore('calculations', { keyPath: 'id', autoIncrement: true })
+      }
+    }
+  })
+}
+
 const syncData = () => {
   if (loaderSync.value) {
     loaderSync.value.syncData(true)
@@ -77,12 +121,7 @@ const handleSync = () => {
 
 const exportToExcel = async () => {
   try {
-    if (!reportsTable.value?.getAllData) {
-      console.warn("getAllData method is not defined in ReportsTable")
-      return
-    }
-
-    const allData = await reportsTable.value.getAllData()
+    const allData = await fetchAllDataFromIndexedDB()
 
     if (!allData || allData.length === 0) {
       alert("لا توجد بيانات للتصدير")
