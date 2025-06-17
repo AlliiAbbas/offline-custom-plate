@@ -46,8 +46,8 @@ const loading = ref(false)
 const initialLoading = ref(true)
 const closePopUp = () => {
   openModal.value = false
-  store.dispatch('Vehicle/setUserData' , null)
-  router.push({name:'OfflinePlate'})
+  // store.dispatch('Vehicle/setUserData' , null)
+  // router.push({name:'OfflinePlate'})
 
 }
 function calculate() {

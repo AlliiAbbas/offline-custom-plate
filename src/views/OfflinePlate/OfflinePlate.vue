@@ -436,21 +436,33 @@ const validateForm = () => {
   } else if(/^\d+$/.test(formData.value.vehicle_color)){
     validationErrors.value.vehicle_color = 'لون المركبة يجب أن يكون حروف فقط';
   }
-  if (!formData.value.nationalId.trim()) {
-    validationErrors.value.nationalId = 'الرقم القومي مطلوب';
+
+  // Check if either national ID or passport is provided
+  if (!formData.value.nationalId.trim() && !formData.value.passport.trim()) {
+    validationErrors.value.nationalId = 'الرقم القومي أو جواز السفر مطلوب';
+    validationErrors.value.passport = 'الرقم القومي أو جواز السفر مطلوب';
     isValid = false;
   } else {
-    if (/^\d+$/.test(formData.value.nationalId)) {
-      if (formData.value.nationalId.length !== 14) {
-        validationErrors.value.nationalId = 'الرقم القومي يجب أن يكون 14 رقم';
-        isValid = false;
+    // If national ID is provided, validate its format
+    if (formData.value.nationalId.trim()) {
+      if (/^\d+$/.test(formData.value.nationalId)) {
+        if (formData.value.nationalId.length !== 14) {
+          validationErrors.value.nationalId = 'الرقم القومي يجب أن يكون 14 رقم';
+          isValid = false;
+        } else {
+          validationErrors.value.nationalId = '';
+        }
       } else {
-        validationErrors.value.nationalId = '';
+        validationErrors.value.nationalId = 'الرقم القومي يجب أن يكون أرقام فقط';
+        isValid = false;
       }
     } else {
       validationErrors.value.nationalId = '';
     }
+    // Clear passport validation error if either field is provided
+    validationErrors.value.passport = '';
   }
+
   if (!formData.value.phoneNumber.trim()) {
     validationErrors.value.phoneNumber = 'رقم التليفون مطلوب';
     isValid = false;
@@ -464,10 +476,6 @@ const validateForm = () => {
   }
   if (!formData.value.job.trim()) {
     validationErrors.value.job = 'الوظيفة مطلوبة';
-    isValid = false;
-  }
-  if (!formData.value.passport.trim()) {
-    validationErrors.value.passport = 'جواز السفر  مطلوب';
     isValid = false;
   }
   if (!formData.value.brand.trim()) {
