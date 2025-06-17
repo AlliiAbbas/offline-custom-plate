@@ -280,7 +280,16 @@ defineExpose({
   totalPages,
   pageSize,
   updatePage,
-  totalItems: computed(() => rows.value.length)
+  totalItems: computed(() => rows.value.length),
+  getAllData: async () => {
+    try {
+      const data = await fetchDataFromIndexedDB()
+      return data.filter(item => Object.keys(item).length > 0)
+    } catch (error) {
+      console.error('Error fetching data for export:', error)
+      return []
+    }
+  }
 })
 </script>
 

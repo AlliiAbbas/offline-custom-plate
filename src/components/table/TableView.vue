@@ -1,22 +1,30 @@
 <template>
   <div class="table-view-container">
-    <div class="table-header ">
+    <div class="table-header">
       <h2 class="table-title text-end w-100">جدول تأمين السيارات</h2>
     </div>
+
     <div class="table-wrapper">
-      <button @click="handleSync" color="danger" class="px-4 m-2 rounded-2 bg-danger border-0 text-white">
+      <button @click="handleSync" class="px-4 m-2 rounded-2 bg-danger border-0 text-white">
         مزامنة البيانات
       </button>
+
+      <button @click="exportToExcel" class="px-4 m-2 rounded-2 bg-success border-0 text-white">
+        تصدير
+      </button>
+
       <ReportsTable ref="reportsTable" />
     </div>
+
     <div class="pagination-wrapper">
       <TablePagination
-        :total-items="totalItems"
-        :page-size="pageSize"
-        @page-changed="handlePageChange"
+          :total-items="totalItems"
+          :page-size="pageSize"
+          @page-changed="handlePageChange"
       />
     </div>
-    <SyncLoader ref="loaderSync"/>
+
+    <SyncLoader ref="loaderSync" />
   </div>
 
   <!-- Offline Sync Popup -->
@@ -36,9 +44,10 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
+import * as XLSX from 'xlsx'
 import ReportsTable from './ReportsTable.vue'
 import TablePagination from './TablePagination.vue'
-import SyncLoader from "@/components/SyncLoader.vue";
+import SyncLoader from '@/components/SyncLoader.vue'
 
 const reportsTable = ref(null)
 const loaderSync = ref(null)
@@ -51,6 +60,7 @@ const syncData = () => {
     loaderSync.value.syncData(true)
   }
 }
+
 const handlePageChange = (page) => {
   if (reportsTable.value) {
     reportsTable.value.updatePage(page)
@@ -65,12 +75,66 @@ const handleSync = () => {
   syncData()
 }
 
-// Watch for changes in the total items from the table
-watch(() => reportsTable.value?.totalItems, (newTotal) => {
-  if (newTotal !== undefined) {
-    totalItems.value = newTotal
+const exportToExcel = async () => {
+  try {
+    if (!reportsTable.value?.getAllData) {
+      console.warn("getAllData method is not defined in ReportsTable")
+      return
+    }
+
+    const allData = await reportsTable.value.getAllData()
+
+    if (!allData || allData.length === 0) {
+      alert("لا توجد بيانات للتصدير")
+      return
+    }
+
+    // Format the data for Excel
+    const formattedData = allData.map(item => ({
+      'اسم المالك': item.owner_name || '',
+      'الرقم القومي': item.owner_national_id || '',
+      'العنوان': item.owner_address || '',
+      'الوظيفه': item.owner_job || '',
+      'الطراز': item.model || '',
+      'سنه الصنع': item.year || '',
+      'رقم اللوحه': item.plate || '',
+      'رقم الشاسيه': item.chassis_id || '',
+      'رقم الموتور': item.motor_id || '',
+      'السلندرات': item.cylinders || '',
+      'نوع الوقود': item.fuel_type_id || '',
+      'اخر شركه تامين': item.insurance_last_vendor || '',
+      'من تاريخ': item.from_date || '',
+      'الى تاريخ': item.to_date || '',
+      'صافي القسط': item.net_premium || '',
+      'الاجمالي': item.total_sum || '',
+      'الحالة': item.status === 'cancel' ? 'مُلْغى' : 'نشط'
+    }))
+
+    const worksheet = XLSX.utils.json_to_sheet(formattedData)
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'تقرير تأمين السيارات')
+    
+    // Set column widths
+    const wscols = Object.keys(formattedData[0]).map(() => ({ wch: 15 }))
+    worksheet['!cols'] = wscols
+
+    XLSX.writeFile(workbook, 'تقرير_تأمين_السيارات.xlsx')
+  } catch (error) {
+    console.error('Error exporting to Excel:', error)
+    alert('حدث خطأ أثناء تصدير البيانات')
   }
-}, { immediate: true })
+}
+
+// Watch for changes in the total items from the table
+watch(
+    () => reportsTable.value?.totalItems,
+    (newTotal) => {
+      if (newTotal !== undefined) {
+        totalItems.value = newTotal
+      }
+    },
+    { immediate: true }
+)
 
 onMounted(() => {
   if (reportsTable.value) {
@@ -108,31 +172,6 @@ onMounted(() => {
   font-weight: 600;
 }
 
-.table-actions {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.btn-primary {
-  background-color: #0d6efd;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
-  color: white;
-  font-size: 0.875rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: all 0.2s ease;
-}
-
-.btn-primary:hover {
-  background-color: #0b5ed7;
-  transform: translateY(-1px);
-}
-
 .table-wrapper {
   background-color: white;
   border-radius: 0.5rem;
@@ -152,7 +191,7 @@ onMounted(() => {
     padding: 1rem;
     gap: 1rem;
   }
-  
+
   .table-header {
     padding: 1rem;
     flex-direction: column;
@@ -164,15 +203,11 @@ onMounted(() => {
     width: 100%;
   }
 
-  .search-input {
-    width: 100%;
-  }
-
   .btn-primary {
     width: 100%;
     justify-content: center;
   }
-  
+
   .table-wrapper,
   .pagination-wrapper {
     border-radius: 0.25rem;
