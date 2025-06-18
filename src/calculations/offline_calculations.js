@@ -64,35 +64,21 @@ const offlineCalculations = {
                 const extensionsResult = [];
                 let extensionsTotal = 0;
 
-                extensionsInput.forEach(extensionInput => {
-                    const extension = resolveExtension(extensionInput.code, 'CustomPlate');
-                    if (!extension) {
-                        console.warn('⚠️ Extension not found or invalid', { code: extensionInput.code });
-                        return;
-                    }
-
-                    const amountResult = extension.calculate({
-                        base_installment: basePrice,
-                        original_total: basePrice,
-                        custom_value: extensionInput.custom_value || null,
-                    });
-
-                    const amount = Math.round(Array.isArray(amountResult) ? (amountResult.amount || 0) : amountResult);
-
+                if (extensionsInput.length > 0) {
+                    // Combine all extensions into one with total cost of 8
+                    const extensionNames = extensionsInput.map(ext => getExtensionName(ext.code)).join(' + ');
                     extensionsResult.push({
-                        name: getExtensionName(extensionInput.code),
-                        amount: amount,
-                        details:{
-                            taxes:{
-                                fixed_tax:2.9,
-                                issue_fees:5.1
+                        name: extensionNames,
+                        amount: 8,
+                        details: {
+                            taxes: {
+                                fixed_tax: 2.9,
+                                issue_fees: 5.1
                             }
                         }
-
                     });
-
-                    extensionsTotal += amount;
-                });
+                    extensionsTotal = 8;
+                }
 
                 extensionsTotal = Math.round(extensionsTotal);
                 console.log('➕ Extensions calculated', { extensions: extensionsResult });

@@ -176,15 +176,12 @@
             <div class="col-md-6">
               <div class="form-group">
                 <label class="form-label fw-medium mb-2">نوع الترخيص</label>
-                <input
-                  type="text"
+                <v-select
+                  :options="optionsTypes"
                   v-model="formData.licenseType"
-                  @input="filterInput"
-                  name="licenseType"
-                  data-filter="text"
-                  class="form-control"
-                  :class="{ 'is-invalid': validationErrors.licenseType }"
+                  :class="['', { 'is-invalid': validationErrors.licenseType }]"
                   placeholder="نوع الترخيص"
+                  dir="rtl"
                 />
                 <div class="invalid-feedback d-block" v-if="validationErrors.licenseType">
                   {{ validationErrors.licenseType }}
@@ -241,7 +238,7 @@
                 </div>
               </div>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-6" v-if="!shouldHideEngineFields">
               <div class="form-group">
                 <label class="form-label fw-medium mb-2">رقم الموتور</label>
                 <input
@@ -250,13 +247,14 @@
                     class="form-control"
                     :class="{ 'is-invalid': validationErrors.engineNumber }"
                     placeholder="رقم الموتور"
+
                 />
                 <div class="invalid-feedback d-block" v-if="validationErrors.engineNumber">
                   {{ validationErrors.engineNumber }}
                 </div>
               </div>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-6" v-if="!shouldHideEngineFields">
               <div class="form-group">
                 <label class="form-label fw-medium mb-2">السلندرات</label>
                 <input
@@ -268,6 +266,7 @@
                     class="form-control"
                     :class="{ 'is-invalid': validationErrors.cylinders }"
                     placeholder="السلندرات"
+
                 />
                 <div class="invalid-feedback d-block" v-if="validationErrors.cylinders">
                   {{ validationErrors.cylinders }}
@@ -313,9 +312,11 @@
 </template>
 
 <script setup>
-import { ref, nextTick } from 'vue';
+import { ref, nextTick, computed } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
+import vSelect from 'vue-select';
+import 'vue-select/dist/vue-select.css';
 const router = useRouter();
 const store = useStore();
 const loading = ref(false);
@@ -338,10 +339,16 @@ const formData = ref({
   phoneNumber: '',
   vehicle_color: '',
 });
+const optionsTypes = ['جمرك ملاكي','جمرك دراجة نارية' ,'جمرك مقطورة' ,'جمرك ملحقة','نقل جمرك','نصف مقطورة جمرك','اتوبيس جمرك']
 const plateInputs = ref([]);
 const plateChars = ref(['', '', '', '', '', '', '']);
 
 const validationErrors = ref({});
+
+const shouldHideEngineFields = computed(() => {
+  const hideTypes = ['جمرك مقطورة', 'جمرك ملحقة', 'نصف مقطورة جمرك'];
+  return hideTypes.includes(formData.value.licenseType);
+});
 
 function filterInput(event) {
   const inputEl = event.target;
@@ -497,49 +504,55 @@ const validateForm = () => {
       isValid = false;
     }
   }
-  if (!formData.value.licenseType.trim()) {
+  if (!formData.value.licenseType) {
     validationErrors.value.licenseType = 'نوع الترخيص مطلوب';
     isValid = false;
+  } else {
+    validationErrors.value.licenseType = '';
   }
-  if (!formData.value.plateNumber) {
-    validationErrors.value.plateNumber = 'رقم اللوحة مطلوب';
-    isValid = false;
-  }
+
   if (!formData.value.chassisNumber.trim()) {
     validationErrors.value.chassisNumber = 'رقم الشاسيه مطلوب';
     isValid = false;
   }
-  if (!formData.value.engineNumber.trim()) {
-    validationErrors.value.engineNumber = 'رقم الموتور مطلوب';
-    isValid = false;
+  
+  // Only validate engine fields if they should be visible
+  if (!shouldHideEngineFields.value) {
+    if (!formData.value.engineNumber.trim()) {
+      validationErrors.value.engineNumber = 'رقم الموتور مطلوب';
+      isValid = false;
+    }
+    if (!formData.value.cylinders.trim()) {
+      validationErrors.value.cylinders = 'السلندرات مطلوبة';
+      isValid = false;
+    } else if (!/^\d+$/.test(formData.value.cylinders)) {
+      validationErrors.value.cylinders = 'السلندرات يجب أن تكون أرقام فقط';
+      isValid = false;
+    }
   }
-  if (!formData.value.cylinders.trim()) {
-    validationErrors.value.cylinders = 'السلندرات مطلوبة';
-    isValid = false;
-  } else if (!/^\d+$/.test(formData.value.cylinders)) {
-    validationErrors.value.cylinders = 'السلندرات يجب أن تكون أرقام فقط';
-    isValid = false;
-  }
+  
   if (!formData.value.lastInsuranceCompany.trim()) {
     validationErrors.value.lastInsuranceCompany = 'آخر شركة تأمين مطلوبة';
     isValid = false;
   }
+  if(plateChars.value.join("") !== ''){
+    // Plate number validation
+    const firstPart = plateChars.value.slice(0, 3).filter(char => char !== '').join('');
+    const lastPart = plateChars.value.slice(3).filter(char => char !== '').join('');
 
-  // Plate number validation
-  const firstPart = plateChars.value.slice(0, 3).filter(char => char !== '').join('');
-  const lastPart = plateChars.value.slice(3).filter(char => char !== '').join('');
+    // Check first part (2-3 Arabic letters)
+    if (!/^[\u0600-\u06FF]{2,3}$/.test(firstPart)) {
+      validationErrors.value.plateNumber = 'يجب إدخال حرفين أو ثلاثة حروف عربية في البداية';
+      isValid = false;
+    }
 
-  // Check first part (2-3 Arabic letters)
-  if (!/^[\u0600-\u06FF]{2,3}$/.test(firstPart)) {
-    validationErrors.value.plateNumber = 'يجب إدخال حرفين أو ثلاثة حروف عربية في البداية';
-    isValid = false;
+    // Check last part (3-4 numbers)
+    if (!/^\d{3,4}$/.test(lastPart)) {
+      validationErrors.value.plateNumber = 'يجب إدخال ثلاثة أو أربعة أرقام في النهاية';
+      isValid = false;
+    }
   }
 
-  // Check last part (3-4 numbers)
-  if (!/^\d{3,4}$/.test(lastPart)) {
-    validationErrors.value.plateNumber = 'يجب إدخال ثلاثة أو أربعة أرقام في النهاية';
-    isValid = false;
-  }
 
   return isValid;
 };
@@ -580,5 +593,57 @@ const handleSubmit = async () => {
 .form-control:focus {
   border-color: #dc3545;
   box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25);
+}
+
+/* v-select styling */
+:deep(.v-select) {
+  width: 100%;
+}
+
+:deep(.v-select .vs__dropdown-toggle) {
+  border: 1px solid #ced4da;
+  border-radius: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  background-color: #fff;
+  min-height: 38px;
+}
+
+:deep(.v-select .vs__dropdown-toggle:focus-within) {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25);
+}
+
+:deep(.v-select.is-invalid .vs__dropdown-toggle) {
+  border-color: #dc3545;
+}
+
+:deep(.v-select .vs__selected-options) {
+  padding: 0;
+}
+
+:deep(.v-select .vs__actions) {
+  padding: 0;
+}
+
+:deep(.v-select .vs__search) {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+:deep(.v-select .vs__dropdown-menu) {
+  border: 1px solid #ced4da;
+  border-radius: 0.375rem;
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+:deep(.v-select .vs__dropdown-option) {
+  padding: 0.5rem 0.75rem;
+}
+
+:deep(.v-select .vs__dropdown-option--highlight) {
+  background-color: #dc3545;
+  color: white;
 }
 </style>

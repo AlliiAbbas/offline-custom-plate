@@ -128,8 +128,34 @@ const exportToExcel = async () => {
     const wscols = Object.keys(formattedData[0]).map(() => ({ wch: 15 }))
     worksheet['!cols'] = wscols
 
-    XLSX.writeFile(workbook, 'تقرير_تأمين_السيارات.xlsx')
-    
+    XLSX.writeFile(workbook, 'تقرير_نسخة_المزامنة.xlsx')
+    const formattedData2 = allData.map(item => ({
+      'رقم الوثيقة': item.code || '',
+      'اسم المالك': item.owner_name || '',
+      'الرقم القومي': item.owner_national_id || '',
+      'العنوان': item.owner_address || '',
+      'الوظيفه': item.owner_job || '',
+      'الطراز': item.model || '',
+      'سنه الصنع': item.year || '',
+      'رقم اللوحه': item.plate || '',
+      'رقم الشاسيه': item.chassis_id || '',
+      'رقم الموتور': item.motor_id || '',
+      'السلندرات': item.cylinders || '',
+      'نوع الوقود': item.fuel_type_id || '',
+      'اخر شركه تامين': item.insurance_last_vendor || '',
+      'من تاريخ': item.from_date || '',
+      'الى تاريخ': item.to_date || '',
+      'صافي القسط': item.net_premium || '',
+      'الاجمالي': item.total_sum || '',
+      'الحالة': item.status === 'cancel' ? 'مُلْغى' : 'نشط'
+    }))
+    // Set column widths
+    const worksheet2 = XLSX.utils.json_to_sheet(formattedData2)
+    const workbook2 = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook2, worksheet2, 'تقرير تأمين السيارات')
+    worksheet['!cols'] = Object.keys(formattedData2[0]).map(() => ({wch: 15}))
+
+    XLSX.writeFile(workbook2, 'تقرير_تأمين_السيارات.xlsx')
     // Show confirmation popup after successful export
     showClearDataPopup.value = true
     
