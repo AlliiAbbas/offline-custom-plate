@@ -128,7 +128,7 @@ const exportToExcel = async () => {
       return
     }
 
-    // Format the data for Excel
+    // Format the data for Excel with all columns
     const formattedData = allData.map(item => ({
       'اسم المالك': item.owner_name || '',
       'الرقم القومي': item.owner_national_id || '',
@@ -146,6 +146,32 @@ const exportToExcel = async () => {
       'الى تاريخ': item.to_date || '',
       'صافي القسط': item.net_premium || '',
       'الاجمالي': item.total_sum || '',
+      'رقم الوثيقة': item.id || '',
+      'تاريخ اصدار الوثيقة': item.issued_at || '',
+      'المنفذ': item.traffic_unit || '',
+      'حاله التأمين': item.insurance_state || '',
+      'الضريبه': item.tax || '',
+      'نصف الدمغة النسبية': item.stamp || '',
+      'رسم الأشراف والرقابة': item.supervision_fees || '',
+      'رسوم المراجعة واعتماد الوثائق': item.review_fees || '',
+      'مصاريف الأصدار': item.issue_fees || '',
+      'الماركه': item.producer || '',
+      'نوع الترخيص': item.vehicle_license_type_id || '',
+      'السعة اللترية': item.motor_cc || '',
+      'وزن': item.vehicle_kg || '',
+      'الحموله': item.wt_kg || '',
+      'بروز واطوال': item.extra_size_percent || '',
+      'وزن زائد': item.wt_extra || '',
+      'عدد الركاب': item.passengers || '',
+      'Tractor_parts': item.tractor_parts || '',
+      'الشكل': item.vehicle_shape || '',
+      'نوغ الملحق': item.attach_type || '',
+      'نهاية الوثيقة الاساسية': item.attach_to_date || '',
+      'رقم الوثيقة الاساسية': item.attach_serial || '',
+      'جهة التأمين': item.Insurance_entity || '',
+      'رقم التليفون': item.owner_phone || '',
+      'محافظة الأصدار': item.region || '',
+      'PolicyStatus': item.policy_status || '',
       'الحالة': item.status === 'cancel' ? 'مُلْغى' : 'نشط'
     }))
 
