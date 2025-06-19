@@ -73,6 +73,50 @@ const pageSize = ref(10)
 const showOfflinePopup = ref(false)
 const showClearDataPopup = ref(false)
 
+const fetchAllDataFromIndexedDB = () => {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('customsPlateDB', 1)
+
+    request.onerror = (event) => {
+      console.error('خطأ في فتح قاعدة البيانات', event)
+      reject(event)
+    }
+
+    request.onsuccess = (event) => {
+      const db = event.target.result
+      const transaction = db.transaction(['calculations'], 'readonly')
+      const objectStore = transaction.objectStore('calculations')
+      const getAllRequest = objectStore.getAll()
+
+      getAllRequest.onsuccess = (event) => {
+        const allData = event.target.result
+        const transformedData = allData.map(item => {
+          if (item.owner_name) {
+            return item
+          }
+          if (item.data) {
+            return item.data
+          }
+          return {}
+        })
+        resolve(transformedData)
+      }
+
+      getAllRequest.onerror = (event) => {
+        console.error('خطأ في قراءة البيانات', event)
+        reject(event)
+      }
+    }
+
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result
+      if (!db.objectStoreNames.contains('calculations')) {
+        db.createObjectStore('calculations', { keyPath: 'id', autoIncrement: true })
+      }
+    }
+  })
+}
+
 const syncData = () => {
   if (loaderSync.value) {
     loaderSync.value.syncData(true)
@@ -105,12 +149,7 @@ const clearIndexedDBData = async () => {
 
 const exportToExcel = async () => {
   try {
-    if (!reportsTable.value?.getAllData) {
-      console.warn("getAllData method is not defined in ReportsTable")
-      return
-    }
-
-    const allData = await reportsTable.value.getAllData()
+    const allData = await fetchAllDataFromIndexedDB()
 
     if (!allData || allData.length === 0) {
       alert("لا توجد بيانات للتصدير")
@@ -147,6 +186,32 @@ const exportToExcel = async () => {
       'الى تاريخ': item.to_date || '',
       'صافي القسط': item.net_premium || '',
       'الاجمالي': item.total_sum || '',
+      'رقم الوثيقة': item.id || '',
+      'تاريخ اصدار الوثيقة': item.issued_at || '',
+      'المنفذ': item.traffic_unit || '',
+      'حاله التأمين': item.insurance_state || '',
+      'الضريبه': item.tax || '',
+      'نصف الدمغة النسبية': item.stamp || '',
+      'رسم الأشراف والرقابة': item.supervision_fees || '',
+      'رسوم المراجعة واعتماد الوثائق': item.review_fees || '',
+      'مصاريف الأصدار': item.issue_fees || '',
+      'الماركه': item.producer || '',
+      'نوع الترخيص': item.vehicle_license_type_id || '',
+      'السعة اللترية': item.motor_cc || '',
+      'وزن': item.vehicle_kg || '',
+      'الحموله': item.wt_kg || '',
+      'بروز واطوال': item.extra_size_percent || '',
+      'وزن زائد': item.wt_extra || '',
+      'عدد الركاب': item.passengers || '',
+      'Tractor_parts': item.tractor_parts || '',
+      'الشكل': item.vehicle_shape || '',
+      'نوغ الملحق': item.attach_type || '',
+      'نهاية الوثيقة الاساسية': item.attach_to_date || '',
+      'رقم الوثيقة الاساسية': item.attach_serial || '',
+      'جهة التأمين': item.Insurance_entity || '',
+      'رقم التليفون': item.owner_phone || '',
+      'محافظة الأصدار': item.region || '',
+      'PolicyStatus': item.policy_status || '',
       'الحالة': item.status === 'cancel' ? 'مُلْغى' : 'نشط'
     }))
     // Set column widths

@@ -20,6 +20,32 @@
           <th class="bg-light text-secondary py-3 border-bottom-0 sticky-header">الى تاريخ</th>
           <th class="bg-light text-secondary py-3 border-bottom-0 sticky-header">صافي القسط</th>
           <th class="bg-light text-secondary py-3 border-bottom-0 sticky-header">الاجمالي</th>
+          <th class="bg-light text-secondary py-3 border-bottom-0 sticky-header">رقم الوثيقة</th>
+          <th class="bg-light text-secondary py-3 border-bottom-0 sticky-header">تاريخ اصدار الوثيقة</th>
+          <th class="bg-light text-secondary py-3 border-bottom-0 sticky-header">المنفذ</th>
+          <th class="bg-light text-secondary py-3 border-bottom-0 sticky-header">حاله التأمين</th>
+          <th class="bg-light text-secondary py-3 border-bottom-0 sticky-header">الضريبه</th>
+          <th class="bg-light text-secondary py-3 border-bottom-0 sticky-header">نصف الدمغة النسبية</th>
+          <th class="bg-light text-secondary py-3 border-bottom-0 sticky-header">رسم الأشراف والرقابة</th>
+          <th class="bg-light text-secondary py-3 border-bottom-0 sticky-header">رسوم المراجعة واعتماد الوثائق</th>
+          <th class="bg-light text-secondary py-3 border-bottom-0 sticky-header">مصاريف الأصدار</th>
+          <th class="bg-light text-secondary py-3 border-bottom-0 sticky-header">الماركه</th>
+          <th class="bg-light text-secondary py-3 border-bottom-0 sticky-header">نوع الترخيص</th>
+          <th class="bg-light text-secondary py-3 border-bottom-0 sticky-header">السعة اللترية</th>
+          <th class="bg-light text-secondary py-3 border-bottom-0 sticky-header">وزن</th>
+          <th class="bg-light text-secondary py-3 border-bottom-0 sticky-header">الحموله</th>
+          <th class="bg-light text-secondary py-3 border-bottom-0 sticky-header">بروز واطوال</th>
+          <th class="bg-light text-secondary py-3 border-bottom-0 sticky-header">وزن زائد</th>
+          <th class="bg-light text-secondary py-3 border-bottom-0 sticky-header">عدد الركاب</th>
+          <th class="bg-light text-secondary py-3 border-bottom-0 sticky-header">Tractor_parts</th>
+          <th class="bg-light text-secondary py-3 border-bottom-0 sticky-header">الشكل</th>
+          <th class="bg-light text-secondary py-3 border-bottom-0 sticky-header">نوع الملحق</th>
+          <th class="bg-light text-secondary py-3 border-bottom-0 sticky-header">نهاية الوثيقة الاساسية</th>
+          <th class="bg-light text-secondary py-3 border-bottom-0 sticky-header">رقم الوثيقة الاساسية</th>
+          <th class="bg-light text-secondary py-3 border-bottom-0 sticky-header">جهة التأمين</th>
+          <th class="bg-light text-secondary py-3 border-bottom-0 sticky-header">رقم التليفون</th>
+          <th class="bg-light text-secondary py-3 border-bottom-0 sticky-header">محافظة الأصدار</th>
+          <th class="bg-light text-secondary py-3 border-bottom-0 sticky-header">PolicyStatus</th>
           <th class="bg-light text-secondary py-3 border-bottom-0 sticky-header">الحالة</th>
           <th class="bg-light text-secondary py-3 border-bottom-0 sticky-header">الإجراءات</th>
         </tr>
@@ -43,9 +69,33 @@
           <td class="py-3">{{ row.to_date }}</td>
           <td class="py-3">{{ row.net_premium }}</td>
           <td class="py-3">{{ row.total_sum }}</td>
-          <td class="py-3">
-            <span :class="getStatusClass(row.status)">{{ row.status=== 'cancel' ? ' مُلْغى' : 'نشط' }}</span>
-          </td>
+          <td class="py-3">{{ row.id }}</td>
+          <td class="py-3">{{ row.issued_at }}</td>
+          <td class="py-3">{{ row.traffic_unit }}</td>
+          <td class="py-3">{{ row.insurance_state }}</td>
+          <td class="py-3">{{ row.tax }}</td>
+          <td class="py-3">{{ row.stamp }}</td>
+          <td class="py-3">{{ row.supervision_fees }}</td>
+          <td class="py-3">{{ row.review_fees }}</td>
+          <td class="py-3">{{ row.issue_fees }}</td>
+          <td class="py-3">{{ row.producer }}</td>
+          <td class="py-3">{{ row.vehicle_license_type_id }}</td>
+          <td class="py-3">{{ row.motor_cc }}</td>
+          <td class="py-3">{{ row.vehicle_kg }}</td>
+          <td class="py-3">{{ row.wt_kg }}</td>
+          <td class="py-3">{{ row.extra_size_percent }}</td>
+          <td class="py-3">{{ row.wt_extra }}</td>
+          <td class="py-3">{{ row.passengers }}</td>
+          <td class="py-3">{{ row.tractor_parts }}</td>
+          <td class="py-3">{{ row.vehicle_shape }}</td>
+          <td class="py-3">{{ row.attach_type }}</td>
+          <td class="py-3">{{ row.attach_to_date }}</td>
+          <td class="py-3">{{ row.attach_serial }}</td>
+          <td class="py-3">{{ row.Insurance_entity }}</td>
+          <td class="py-3">{{ row.owner_phone }}</td>
+          <td class="py-3">{{ row.region }}</td>
+          <td class="py-3">{{ row.policy_status }}</td>
+          <td class="py-3"><span :class="getStatusClass(row.status)">{{ row.status === 'cancel' ? 'مُلْغى' : 'نشط' }}</span></td>
           <td class="py-3">
             <button 
               v-if="!row.status || row.status === 'done'"
@@ -58,7 +108,7 @@
           </td>
         </tr>
         <tr v-if="rows.length === 0">
-          <td colspan="18" class="text-center">
+          <td :colspan="44" class="text-center">
             <div class="empty-state">
               <i class="bi bi-inbox text-muted" style="font-size: 2rem;"></i>
               <p class="text-muted mt-3 mb-0">لا توجد بيانات</p>
