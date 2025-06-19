@@ -1,7 +1,7 @@
 <template>
   <section class="bg-black">
     <div class="bg-black">
-    <table-view class="" />
+    <table-view class=""  />
     </div>
   </section>
  

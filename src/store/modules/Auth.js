@@ -25,6 +25,8 @@ const actions = {
                 try {
                     sessionStorage.setItem('token', auth_data.token);
                     sessionStorage.setItem('username', auth_data.username);
+                    sessionStorage.setItem('location', auth_data.location);
+                    sessionStorage.setItem('code', auth_data.code);
                     await saveUser(auth_data);
                     commit('setUser', auth_data);
                     resolve(true)
@@ -43,6 +45,7 @@ const actions = {
             try {
                 sessionStorage.removeItem('token');
                 sessionStorage.removeItem('username');
+                sessionStorage.removeItem('location');
                 await clearUserData();
                 commit('setUser', null);
                 resolve(true);

@@ -20,7 +20,6 @@
           <th class="bg-light text-secondary py-3 border-bottom-0 sticky-header">الى تاريخ</th>
           <th class="bg-light text-secondary py-3 border-bottom-0 sticky-header">صافي القسط</th>
           <th class="bg-light text-secondary py-3 border-bottom-0 sticky-header">الاجمالي</th>
-          <th class="bg-light text-secondary py-3 border-bottom-0 sticky-header">رقم الوثيقة</th>
           <th class="bg-light text-secondary py-3 border-bottom-0 sticky-header">تاريخ اصدار الوثيقة</th>
           <th class="bg-light text-secondary py-3 border-bottom-0 sticky-header">المنفذ</th>
           <th class="bg-light text-secondary py-3 border-bottom-0 sticky-header">حاله التأمين</th>
@@ -69,7 +68,6 @@
           <td class="py-3">{{ row.to_date }}</td>
           <td class="py-3">{{ row.net_premium }}</td>
           <td class="py-3">{{ row.total_sum }}</td>
-          <td class="py-3">{{ row.id }}</td>
           <td class="py-3">{{ row.issued_at }}</td>
           <td class="py-3">{{ row.traffic_unit }}</td>
           <td class="py-3">{{ row.insurance_state }}</td>

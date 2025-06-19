@@ -46,8 +46,8 @@ const loading = ref(false)
 const initialLoading = ref(true)
 const closePopUp = () => {
   openModal.value = false
-  store.dispatch('Vehicle/setUserData' , null)
-  router.push({name:'OfflinePlate'})
+  // store.dispatch('Vehicle/setUserData' , null)
+  // router.push({name:'OfflinePlate'})
 
 }
 function calculate() {
@@ -114,7 +114,7 @@ function calculate() {
           year: user_data?.manufacturingYear,
           from_date: body?.from_date,
           to_date: body.to_date,
-          issued_at: '',
+          issued_at:new Date().toISOString().split('T')[0],
           insurance_state: '',
           owner_name: user_data?.ownerName,
           owner_national_id: user_data?.nationalId,
@@ -146,23 +146,23 @@ function calculate() {
           region: null,
           policy_status: null,
           vehicle_type: null,
-          traffic_unit: null,
+          traffic_unit: sessionStorage.getItem('location'),
           insurance_last_vendor: user_data?.lastInsuranceCompany,
-          status: 'done'
+          status: 'done',
         }
-        let user = store.getters["Auth/getUser"]
+
         try {
           const lastCode = await getLastCode();
           if (!lastCode) {
-            data2.code = user.code;
-            await saveLastCode(user.code);
+            let code = parseInt(sessionStorage.getItem('code'));
+            data2.code = code
+            await saveLastCode(code);
           } else {
             data2.code = lastCode + 1;
             await saveLastCode(data2.code);
           }
         } catch (error) {
           console.error('Error handling code:', error);
-          data2.code = user.code;
         }
         let data_to_save = {
           data: JSON.parse(JSON.stringify(data2)),
@@ -263,7 +263,7 @@ function calculate() {
           stamp: e.taxes.stamp_tax,
           issue_fees: e.issue_fees,
           total_sum: e.final_total,
-          vehicle_license_type_id: null,
+          vehicle_license_type_id: user_data?.licenseType,
           motor_cc: null,
           cylinders: user_data.cylinders,
           fuel_type_id: data.fuel_type,
