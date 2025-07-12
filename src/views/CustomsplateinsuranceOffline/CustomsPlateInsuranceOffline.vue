@@ -48,8 +48,8 @@ const initialLoading = ref(true)
 const closePopUp = () => {
   openModal.value = false
   loading.value = false
-  store.dispatch('Vehicle/setUserData' , null)
-  router.push({name:'OfflinePlate'})
+  // store.dispatch('Vehicle/setUserData' , null)
+  // router.push({name:'OfflinePlate'})
 
 }
 function calculate() {
@@ -116,7 +116,7 @@ function calculate() {
           from_date: body?.from_date,
           to_date: body.to_date,
           issued_at:new Date().toISOString().split('T')[0],
-          insurance_state: '',
+          insurance_state: 'New',
           owner_name: user_data?.ownerName,
           owner_national_id: user_data?.nationalId,
           owner_address: user_data?.address,
@@ -125,9 +125,11 @@ function calculate() {
           net_premium: e.base_price,
           tax: e.taxes.total,
           stamp: e.taxes.stamp_tax,
+          admin_fees:e.taxes.supervision_tax,
+          audit_fees:e.taxes.review_tax,
           issue_fees: e.issue_fees,
           total_sum: e.final_total,
-          vehicle_license_type_id: null,
+          vehicle_license_type: body.vehicle_type,
           motor_cc: null,
           cylinders: user_data.cylinders,
           fuel_type_id: body.fuel_type,
@@ -234,6 +236,7 @@ function calculate() {
       data.fuel_type = 'بنزين'
       data.vehicle_type = data.CustomPlate
       store.dispatch('Vehicle/getCalculationsOffline' , data).then(async (e) => {
+        console.log(data);
         calculationData.value = e
         console.log(e);
         let user_data = store.getters["Vehicle/getUserData"]
@@ -248,8 +251,8 @@ function calculate() {
           year: user_data?.manufacturingYear,
           from_date: data?.from_date,
           to_date: data.to_date,
-          issued_at: '',
-          insurance_state: '',
+          issued_at: new Date().toISOString().split('T')[0],
+          insurance_state: 'NEW',
           owner_name: user_data?.ownerName,
           owner_national_id: user_data?.nationalId,
           owner_address: user_data?.address,
@@ -259,8 +262,10 @@ function calculate() {
           tax: e.taxes.total,
           stamp: e.taxes.stamp_tax,
           issue_fees: e.issue_fees,
+          admin_fees:e.taxes.supervision_tax,
+          audit_fees:e.taxes.review_tax,
           total_sum: e.final_total,
-          vehicle_license_type_id: user_data?.licenseType,
+          vehicle_license_type: data?.CustomPlate,
           motor_cc: null,
           cylinders: user_data.cylinders,
           fuel_type_id: data.fuel_type,
@@ -279,7 +284,7 @@ function calculate() {
           Insurance_entity: null,
           region: null,
           policy_status: null,
-          vehicle_type: null,
+          vehicle_type: user_data?.licenseType,
           traffic_unit: null,
           insurance_last_vendor: user_data?.lastInsuranceCompany,
           status: 'done'

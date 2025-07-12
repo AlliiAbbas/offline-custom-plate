@@ -200,7 +200,7 @@ export const getEncryptedFields = () => {
     'stamp',
     'issue_fees',
     'total_sum',
-    'vehicle_license_type_id',
+    'vehicle_license_type',
     'motor_cc',
     'cylinders',
     'fuel_type_id',

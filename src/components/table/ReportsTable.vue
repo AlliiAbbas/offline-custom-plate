@@ -73,11 +73,11 @@
           <td class="py-3">{{ row.insurance_state }}</td>
           <td class="py-3">{{ row.tax }}</td>
           <td class="py-3">{{ row.stamp }}</td>
-          <td class="py-3">{{ row.supervision_fees }}</td>
-          <td class="py-3">{{ row.review_fees }}</td>
+          <td class="py-3">{{ row.admin_fees }}</td>
+          <td class="py-3">{{ row.audit_fees }}</td>
           <td class="py-3">{{ row.issue_fees }}</td>
           <td class="py-3">{{ row.producer }}</td>
-          <td class="py-3">{{ row.vehicle_license_type_id }}</td>
+          <td class="py-3">{{ row.vehicle_license_type }}</td>
           <td class="py-3">{{ row.motor_cc }}</td>
           <td class="py-3">{{ row.vehicle_kg }}</td>
           <td class="py-3">{{ row.wt_kg }}</td>
