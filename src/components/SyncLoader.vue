@@ -27,22 +27,23 @@ const showSuccess = ref(false);
 const isOnline = ref(navigator.onLine);
 
 const syncData = async (newStatus) => {
-  if (newStatus) {
-    isLoading.value = true;
-    showSuccess.value = false;
-    try {
-      await store.dispatch('Vehicle/syncOfflineData').then(() => {
-        isLoading.value = false;
-        showSuccess.value = true;
-        setTimeout(() => {
-          showSuccess.value = false;
-        }, 1000);
-      });
-    } catch (error) {
-      console.error('Failed to sync data:', error);
-      isLoading.value = false;
-    }
-  }
+  // if (newStatus) {
+  //   isLoading.value = true;
+  //   showSuccess.value = false;
+  //   try {
+  //     await store.dispatch('Vehicle/syncOfflineData').then(() => {
+  //       isLoading.value = false;
+  //       showSuccess.value = true;
+  //       setTimeout(() => {
+  //         showSuccess.value = false;
+  //       }, 1000);
+  //     });
+  //   } catch (error) {
+  //     console.error('Failed to sync data:', error);
+  //     isLoading.value = false;
+  //   }
+  // }
+  isLoading.value = newStatus
 }
 
 

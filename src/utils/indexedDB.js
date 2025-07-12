@@ -1,3 +1,5 @@
+import { encryptObjectFields, decryptObjectFields, getEncryptedFields } from './encryption.js';
+
 const DB_NAME = 'customsPlateDB';
 const STORE_NAME = 'calculations';
 const DB_VERSION = 1;
@@ -247,20 +249,27 @@ export const saveData = async (data) => {
     console.log('Starting saveData operation...');
     const db = await initDB();
     
+    // Encrypt sensitive data before saving
+    let dataToSave = { ...data };
+    if (data.data) {
+      const encryptedFields = getEncryptedFields();
+      dataToSave.data = await encryptObjectFields(data.data, encryptedFields);
+    }
+    
     return new Promise((resolve, reject) => {
       const transaction = db.transaction([STORE_NAME], 'readwrite');
       const store = transaction.objectStore(STORE_NAME);
       
-      console.log('Adding data to store:', data);
-      const request = store.add(data);
+      console.log('Adding encrypted data to store:', dataToSave);
+      const request = store.put(dataToSave);
 
       request.onsuccess = (event) => {
-        console.log('Data saved successfully with ID:', event.target.result);
+        console.log('Encrypted data saved successfully with ID:', event.target.result);
         resolve(event.target.result);
       };
 
       request.onerror = (event) => {
-        console.error('Error saving data:', event.target.error);
+        console.error('Error saving encrypted data:', event.target.error);
         reject(event.target.error);
       };
 
@@ -278,19 +287,140 @@ export const saveData = async (data) => {
   }
 };
 
+// دالة جديدة لتحديث عنصر موجود
+export const updateData = async (id, updatedData) => {
+  try {
+    console.log('Starting updateData operation for ID:', id);
+    const db = await initDB();
+    
+    // Encrypt sensitive data before updating
+    let dataToUpdate = { ...updatedData };
+    if (updatedData.data) {
+      const encryptedFields = getEncryptedFields();
+      dataToUpdate.data = await encryptObjectFields(updatedData.data, encryptedFields);
+    }
+    
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction([STORE_NAME], 'readwrite');
+      const store = transaction.objectStore(STORE_NAME);
+      
+      // الحصول على العنصر الموجود أولاً
+      const getRequest = store.get(id);
+      
+      getRequest.onsuccess = () => {
+        const existingItem = getRequest.result;
+        if (existingItem) {
+          // دمج البيانات المحدثة مع البيانات الموجودة
+          const mergedData = {
+            ...existingItem,
+            ...dataToUpdate,
+            id: id // الحفاظ على الـ ID الأصلي
+          };
+          
+          console.log('Updating existing item:', mergedData);
+          const updateRequest = store.put(mergedData);
+          
+          updateRequest.onsuccess = () => {
+            console.log('Data updated successfully');
+            resolve(id);
+          };
+          
+          updateRequest.onerror = (event) => {
+            console.error('Error updating data:', event.target.error);
+            reject(event.target.error);
+          };
+        } else {
+          reject(new Error('Item not found with ID: ' + id));
+        }
+      };
+      
+      getRequest.onerror = (event) => {
+        console.error('Error getting existing item:', event.target.error);
+        reject(event.target.error);
+      };
+    });
+  } catch (error) {
+    console.error('Error in updateData:', error);
+    throw error;
+  }
+};
+
 export const getAllData = async () => {
   try {
+    console.log('getAllData: Starting...');
     const db = await initDB();
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       const transaction = db.transaction([STORE_NAME], 'readonly');
       const store = transaction.objectStore(STORE_NAME);
       const request = store.getAll();
 
-      request.onsuccess = () => resolve(request.result);
+      request.onsuccess = async () => {
+        try {
+          const encryptedData = request.result;
+          console.log('getAllData: Raw encrypted data from IndexedDB:', encryptedData);
+          const decryptedData = [];
+          
+          for (const item of encryptedData) {
+            console.log('getAllData: Processing item:', item);
+            if (item.data) {
+              console.log('getAllData: Item has data property, decrypting...');
+              const encryptedFields = getEncryptedFields();
+              const decryptedItem = {
+                ...item,
+                data: await decryptObjectFields(item.data, encryptedFields)
+              };
+              console.log('getAllData: Decrypted item:', decryptedItem);
+              decryptedData.push(decryptedItem);
+            } else {
+              console.log('getAllData: Item has no data property, adding as is:', item);
+              decryptedData.push(item);
+            }
+          }
+          
+          console.log('getAllData: Final decrypted data:', decryptedData);
+          resolve(decryptedData);
+        } catch (decryptError) {
+          console.error('Error decrypting data:', decryptError);
+          reject(decryptError);
+        }
+      };
+      
       request.onerror = () => reject(request.error);
     });
   } catch (error) {
     console.error('Error in getAllData:', error);
+    throw error;
+  }
+};
+
+// Helper function to get decrypted data for table display
+export const getDecryptedDataForTable = async () => {
+  try {
+    console.log('getDecryptedDataForTable: Starting...');
+    const allData = await getAllData();
+    console.log('getDecryptedDataForTable: All data from IndexedDB:', allData);
+    
+    const tableData = allData.map(item => {
+      console.log('getDecryptedDataForTable: Processing item:', item);
+      
+      // If item has data property (encrypted structure), return the decrypted data
+      if (item.data) {
+        console.log('getDecryptedDataForTable: Using item.data:', item.data);
+        return item.data;
+      }
+      // If item itself is the data (already decrypted), return as is
+      console.log('getDecryptedDataForTable: Using item directly:', item);
+      return item;
+    }).filter(item => {
+      const isValid = item && Object.keys(item).length > 0;
+      console.log('getDecryptedDataForTable: Filtering item:', item, 'isValid:', isValid);
+      return isValid;
+    });
+    
+    console.log('getDecryptedDataForTable: Final table data:', tableData);
+    return tableData;
+  } catch (error) {
+    console.error('Error getting decrypted data for table:', error);
     throw error;
   }
 };
@@ -315,12 +445,30 @@ export const getAllCustomPlateData = async () => {
 export const getDataById = async (id) => {
   try {
     const db = await initDB();
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       const transaction = db.transaction([STORE_NAME], 'readonly');
       const store = transaction.objectStore(STORE_NAME);
       const request = store.get(id);
 
-      request.onsuccess = () => resolve(request.result);
+      request.onsuccess = async () => {
+        try {
+          const encryptedItem = request.result;
+          if (encryptedItem && encryptedItem.data) {
+            const encryptedFields = getEncryptedFields();
+            const decryptedItem = {
+              ...encryptedItem,
+              data: await decryptObjectFields(encryptedItem.data, encryptedFields)
+            };
+            resolve(decryptedItem);
+          } else {
+            resolve(encryptedItem);
+          }
+        } catch (decryptError) {
+          console.error('Error decrypting data by ID:', decryptError);
+          reject(decryptError);
+        }
+      };
+      
       request.onerror = () => reject(request.error);
     });
   } catch (error) {
@@ -479,6 +627,7 @@ export const clearUserData = async () => {
     throw error;
   }
 };
+
 export const clearTable = async () => {
   try {
     console.log('Clearing user data...');
@@ -507,6 +656,23 @@ export const clearTable = async () => {
     });
   } catch (error) {
     console.error('Error in clearUserData:', error);
+    throw error;
+  }
+};
+
+export const clearAllDataAndRegenerateKey = async () => {
+  try {
+    console.log('Clearing all data and regenerating encryption key...');
+    
+    // Clear all IndexedDB data
+    await clearTable();
+    
+    // Clear encryption key from localStorage to force regeneration
+    localStorage.removeItem('encryptionKey');
+    
+    console.log('All data cleared and encryption key regenerated');
+  } catch (error) {
+    console.error('Error clearing all data:', error);
     throw error;
   }
 };

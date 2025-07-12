@@ -3,7 +3,22 @@
     <div class="table-header">
       <h2 class="table-title text-end w-100">جدول تأمين السيارات</h2>
     </div>
-
+    <div v-if="showSuccess" class="sync-success-overlay">
+      <div class="success-icon">
+        <i class="fas fa-check-circle"></i>
+      </div>
+      <div class="alert alert-success" role="alert">
+        تم مزامنة البيانات بنجاح
+      </div>
+    </div>
+    <div v-if="showFailed" class="sync-success-overlay">
+      <div class="error-icon">
+        <i class="fas fa-times-circle"></i>
+      </div>
+      <div class="alert alert-danger" role="alert">
+        فشلت مزامنة البيانات
+      </div>
+    </div>
     <div class="table-wrapper">
       <button @click="handleSync" class="px-4 m-2 rounded-2 bg-danger border-0 text-white">
         مزامنة البيانات
@@ -57,6 +72,9 @@
       </div>
     </div>
   </div>
+
+
+
 </template>
 
 <script setup>
@@ -65,63 +83,31 @@ import * as XLSX from 'xlsx'
 import ReportsTable from './ReportsTable.vue'
 import TablePagination from './TablePagination.vue'
 import SyncLoader from '../../components/SyncLoader.vue'
+import { clearTable, getAllData, initDB } from '../../utils/indexedDB'
+import { getDecryptedDataForTable } from '../../utils/indexedDB'
+import { decryptObjectFields, getEncryptedFields } from '../../utils/encryption'
+import { useStore } from 'vuex'
+
 const reportsTable = ref(null)
-import {clearTable} from '../../utils/indexedDB'
 const loaderSync = ref(null)
 const totalItems = ref(0)
 const pageSize = ref(10)
 const showOfflinePopup = ref(false)
+const showSuccess = ref(false)
+const showFailed = ref(false)
 const showClearDataPopup = ref(false)
+const store = useStore()
 
-const fetchAllDataFromIndexedDB = () => {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open('customsPlateDB', 1)
-
-    request.onerror = (event) => {
-      console.error('خطأ في فتح قاعدة البيانات', event)
-      reject(event)
-    }
-
-    request.onsuccess = (event) => {
-      const db = event.target.result
-      const transaction = db.transaction(['calculations'], 'readonly')
-      const objectStore = transaction.objectStore('calculations')
-      const getAllRequest = objectStore.getAll()
-
-      getAllRequest.onsuccess = (event) => {
-        const allData = event.target.result
-        const transformedData = allData.map(item => {
-          if (item.owner_name) {
-            return item
-          }
-          if (item.data) {
-            return item.data
-          }
-          return {}
-        })
-        resolve(transformedData)
-      }
-
-      getAllRequest.onerror = (event) => {
-        console.error('خطأ في قراءة البيانات', event)
-        reject(event)
-      }
-    }
-
-    request.onupgradeneeded = (event) => {
-      const db = event.target.result
-      if (!db.objectStoreNames.contains('calculations')) {
-        db.createObjectStore('calculations', { keyPath: 'id', autoIncrement: true })
-      }
-    }
-  })
-}
-
-const syncData = () => {
-  if (loaderSync.value) {
-    loaderSync.value.syncData(true)
+const fetchAllDataFromIndexedDB = async () => {
+  try {
+    const tableData = await getDecryptedDataForTable();
+    console.log('Data for table display (TableView):', tableData);
+    return tableData;
+  } catch (error) {
+    console.error('خطأ في قراءة البيانات من IndexedDB:', error);
+    throw error;
   }
-}
+};
 
 const handlePageChange = (page) => {
   if (reportsTable.value) {
@@ -129,12 +115,91 @@ const handlePageChange = (page) => {
   }
 }
 
-const handleSync = () => {
+const handleSync = async () => {
   if (!navigator.onLine) {
     showOfflinePopup.value = true
     return
   }
-  syncData()
+
+  try {
+    // إظهار loader
+    if (loaderSync.value) {
+      loaderSync.value.syncData(true)
+    }
+
+    // جلب جميع البيانات من IndexedDB
+    const allData = await getAllData()
+    
+    // if (!allData || allData.length === 0) {
+    //   alert('لا توجد بيانات للمزامنة')
+    //   if (loaderSync.value) {
+    //     loaderSync.value.syncData(false)
+    //   }
+    //   return
+    // }
+
+    // تحويل البيانات إلى الشكل المطلوب للـ API
+    const policies = []
+    
+    for (const item of allData) {
+      if (item.data) {
+        // فك تشفير البيانات قبل إرسالها للباك إند
+        const decryptedData = await decryptObjectFields(item.data, getEncryptedFields())
+        policies.push(decryptedData)
+      } else {
+        // إذا كانت البيانات غير مشفرة، أرسلها كما هي
+        policies.push(item)
+      }
+    }
+
+    // if (policies.length === 0) {
+    //   alert('لا توجد بيانات صالحة للمزامنة')
+    //   if (loaderSync.value) {
+    //     loaderSync.value.syncData(false)
+    //   }
+    //   return
+    // }
+    console.log(policies);
+    // إرسال البيانات للباك إند
+    await store.dispatch('Vehicle/resyncCustomPlate', policies).then(()=>{
+      showSuccess.value=true
+            setTimeout(() => {
+              showSuccess.value = false;
+            }, 2000);
+      clearTable()
+    }).catch(()=>{
+      showFailed.value= true
+      setTimeout(() => {
+        showFailed.value = false;
+      }, 2000);
+    })
+    
+    //
+    // // إخفاء loader
+    if (loaderSync.value) {
+      loaderSync.value.syncData(false)
+    }
+    //
+    // إظهار رسالة نجاح
+
+    // // تحديث الجدول
+    // if (reportsTable.value) {
+    //   // إعادة تحميل البيانات
+    //   const data = await reportsTable.value.getAllData()
+    //   if (data && data.length > 0) {
+    //     reportsTable.value.rows = data
+    //   }
+    // }
+    
+  } catch (error) {
+    console.error('خطأ في عملية المزامنة:', error)
+    alert('فشل في المزامنة: ' + (error.message || 'خطأ غير معروف'))
+    
+    // إخفاء loader
+    // if (loaderSync.value) {
+    //   loaderSync.value.syncData(false)
+    // }
+  }
 }
 
 const clearIndexedDBData = async () => {
@@ -230,6 +295,8 @@ const exportToExcel = async () => {
   }
 }
 
+
+
 // Watch for changes in the total items from the table
 watch(
     () => reportsTable.value?.totalItems,
@@ -290,7 +357,10 @@ onMounted(() => {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   padding: 1rem;
 }
-
+.alert-danger{
+  background-color: #dc3545 !important;
+  color:white !important;
+}
 @media (max-width: 768px) {
   .table-view-container {
     padding: 1rem;
@@ -407,5 +477,68 @@ onMounted(() => {
 
 .bg-secondary {
   background-color: #6c757d;
+}
+.sync-loader-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.9);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.sync-loader-content {
+  text-align: center;
+  padding: 2rem;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.sync-success-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.9);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.sync-success-content {
+  text-align: center;
+  padding: 2rem;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.success-icon {
+  font-size: 3rem;
+  color: #28a745;
+  margin-bottom: 1rem;
+}
+.error-icon {
+  font-size: 3rem;
+  color: #b52020;
+  margin-bottom: 1rem;
+}
+
+.alert {
+  padding: 1.5rem;
+  border-radius: 8px;
+  font-size: 1.2rem;
+  font-weight: 500;
+  margin: 0;
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
 }
 </style>

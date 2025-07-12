@@ -34,6 +34,7 @@ import VehicleTypeOffline from "@/components/CustomsPlate/VehicleTypeOffline.vue
 import ExtensionsCustomOffline from "@/components/CustomsPlate/ExtensionsCustomOffline.vue";
 import router from "@/router";
 import { saveData, getLastCode, saveLastCode } from '@/utils/indexedDB';
+import { decryptObjectFields, getEncryptedFields } from '@/utils/encryption';
 
 const extensionsData= ref(null)
 const store = useStore()
@@ -46,6 +47,7 @@ const loading = ref(false)
 const initialLoading = ref(true)
 const closePopUp = () => {
   openModal.value = false
+  loading.value = false
   store.dispatch('Vehicle/setUserData' , null)
   router.push({name:'OfflinePlate'})
 
@@ -58,8 +60,8 @@ function calculate() {
   calculationData.value = null
   extensionsData.value = []
   openModal.value = false
+  loading.value = true
   if(attachments.value){
-    loading.value = true
     const data2 = vehicleType.value.getVehicleType();
     const data = extensionsCustom.value.getExtensionsData();
     if(data2 !== undefined && data !== undefined ){
@@ -99,7 +101,6 @@ function calculate() {
       store.dispatch('Vehicle/getCalculationsOffline' , body).then(async (e) => {
         calculationData.value = e
         extensionsData.value = e
-        loading.value = false
         openModal.value = true
         let user_data = store.getters["Vehicle/getUserData"]
 
@@ -172,18 +173,17 @@ function calculate() {
 
         // Check network status and handle accordingly
         if (navigator.onLine) {
-          // Online - call API
-          store.dispatch('Vehicle/resyncCustomPlate', [data2])
+          // Online - call API with decrypted data
+          const decryptedData = await decryptObjectFields(data2, getEncryptedFields());
+          store.dispatch('Vehicle/resyncCustomPlate', [decryptedData])
               .then(response => {
                 console.log('Data synced successfully with server:', response);
                 openModal.value = true
-                loading.value = false
 
               })
               .catch(error => {
                 console.log(error);
                 loading.value = false
-
                 console.error('Error syncing with server:', error);
                 // If API call fails, save to IndexedDB as fallback
                 saveData(data_to_save)
@@ -201,14 +201,12 @@ function calculate() {
               .then((result) => {
                 console.log('Data saved successfully to IndexedDB with ID:', result);
                 openModal.value = true
-                loading.value = false
 
 
               })
               .catch(error => {
                 console.log(error);
                 loading.value = false
-
                 console.error('Error saving data to IndexedDB:', error);
                 // Try to save again after a short delay
                 setTimeout(() => {
@@ -226,13 +224,12 @@ function calculate() {
 
       })
 
+    } else {
+      loading.value = false
     }
   }else {
-    loading.value = true
-
     const data = vehicleType.value.getVehicleType();
     if(data !== undefined){
-      loading.value = true
       data.operation_type = 'custom_plate'
       data.fuel_type = 'بنزين'
       data.vehicle_type = data.CustomPlate
@@ -314,13 +311,11 @@ function calculate() {
               .then(response => {
                 console.log('Data synced successfully with server:', response);
                 openModal.value = true
-                loading.value = false
 
               })
               .catch(error => {
                 console.log(error);
                 loading.value = false
-
                 console.error('Error syncing with server:', error);
                 // If API call fails, save to IndexedDB as fallback
                 saveData(data_to_save)
@@ -338,14 +333,12 @@ function calculate() {
               .then((result) => {
                 console.log('Data saved successfully to IndexedDB with ID:', result);
                 openModal.value = true
-                loading.value = false
 
 
               })
               .catch(error => {
                 console.log(error);
                 loading.value = false
-
                 console.error('Error saving data to IndexedDB:', error);
                 // Try to save again after a short delay
                 setTimeout(() => {
@@ -360,9 +353,10 @@ function calculate() {
               });
 
         }
-        loading.value = false
 
       })
+    } else {
+      loading.value = false
     }
   }
   }

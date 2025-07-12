@@ -93,7 +93,11 @@
           <td class="py-3">{{ row.owner_phone }}</td>
           <td class="py-3">{{ row.region }}</td>
           <td class="py-3">{{ row.policy_status }}</td>
-          <td class="py-3"><span :class="getStatusClass(row.status)">{{ row.status === 'cancel' ? 'مُلْغى' : 'نشط' }}</span></td>
+          <td class="py-3">
+            <span :class="getStatusClassSync(row.status)">
+              {{ getStatusText(row.status) }}
+            </span>
+          </td>
           <td class="py-3">
             <button 
               v-if="!row.status || row.status === 'done'"
@@ -132,6 +136,9 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { getAllData, getDecryptedDataForTable, initDB } from '../../utils/indexedDB'
+import { decryptObjectFields, getEncryptedFields, decryptData, isEncrypted } from '../../utils/encryption'
+import { useStore } from 'vuex'
 
 const rows = ref([])
 const currentPage = ref(1)
@@ -139,11 +146,48 @@ const pageSize = ref(10)
 let lastDataLength = 0
 const showConfirmation = ref(false)
 const selectedIndex = ref(null)
+const store = useStore()
 
-const getStatusClass = (status) => {
-  if (!status || status === 'done') return 'badge bg-success'
-  if (status === 'cancel') return 'badge bg-danger'
-  return 'badge bg-secondary'
+// دالة للحصول على النص المعروض للحالة
+const getStatusText = (status) => {
+  if (isEncrypted(status)) {
+    // إذا كانت مشفرة، نعرض نص افتراضي
+    return 'مُلْغى';
+  }
+  if (!status || status === 'done') return 'نشط';
+  if (status === 'cancel') return 'مُلْغى';
+  return 'نشط';
+}
+
+// دالة للحصول على الكلاس المناسب للحالة (متزامنة)
+const getStatusClassSync = (status) => {
+  if (isEncrypted(status)) {
+    // إذا كانت مشفرة، نفترض أنها ملغية
+    return 'badge bg-danger';
+  }
+  if (!status || status === 'done') return 'badge bg-success';
+  if (status === 'cancel') return 'badge bg-danger';
+  return 'badge bg-secondary';
+}
+
+const getStatusClass = async (status) => {
+  try {
+    // إذا كانت القيمة مشفرة، قم بفك تشفيرها أولاً
+    if (isEncrypted(status)) {
+      const decryptedStatus = await decryptData(status);
+      if (decryptedStatus === 'cancel') return 'badge bg-danger';
+      if (!decryptedStatus || decryptedStatus === 'done') return 'badge bg-success';
+      return 'badge bg-secondary';
+    }
+    
+    // إذا كانت القيمة غير مشفرة
+    if (!status || status === 'done') return 'badge bg-success';
+    if (status === 'cancel') return 'badge bg-danger';
+    return 'badge bg-secondary';
+  } catch (error) {
+    console.error('خطأ في فك تشفير حالة الوثيقة:', error);
+    return 'badge bg-secondary';
+  }
 }
 
 const showCancelConfirmation = (index) => {
@@ -165,135 +209,185 @@ const confirmCancel = async () => {
 
 const handleCancel = async (index) => {
   try {
-    const db = await openIndexedDB()
-    const transaction = db.transaction(['calculations'], 'readwrite')
-    const store = transaction.objectStore('calculations')
+    const allData = await getAllData();
+    const item = rows.value[index];
     
-    const item = rows.value[index]
-    console.log('Current item id:', item.id)
+    const matchingItem = allData.find(dbItem => {
+      const isMatch = dbItem.data && dbItem.data.id === item.id;
+      return isMatch;
+    });
     
-    // Get all items and find the matching one
-    const getAllRequest = store.getAll()
-    
-    getAllRequest.onsuccess = (event) => {
-      const allItems = event.target.result
-      console.log('Current item id:', item)
-      console.log('All items in DB:', allItems.map(item => ({ id: item.id })))
+    if (matchingItem) {
+      // تحديث الـ status في العنصر الموجود
+      matchingItem.data.status = 'cancel';
       
-      // Find the matching item by id
-      const matchingItem = allItems.find(dbItem => {
-        const isMatch = dbItem.data.id === item.id
-        return isMatch
-      })
+      // استخدام دالة التحديث الجديدة
+      const { updateData } = await import('../../utils/indexedDB');
+      await updateData(matchingItem.id, {
+        data: matchingItem.data,
+        timestamp: matchingItem.timestamp
+      });
       
-      if (matchingItem) {
-        console.log('Found matching item:', matchingItem)
-        // Update the status
-        matchingItem.data.status = 'cancel'
-        
-        // Put the updated item back
-        const putRequest = store.put(matchingItem)
-        
-        putRequest.onsuccess = () => {
-          console.log('Successfully updated status to cancel')
-          // Update local state
-          rows.value[index].status = 'cancel'
-        }
-      } else {
-        console.log('No matching item found - Check if id exists')
-      }
+      // تحديث العرض في الجدول
+      rows.value[index].status = 'cancel';
+      
+      lastDataLength = rows.value.length;
+      
+      setTimeout(() => {
+        checkForChanges();
+      }, 100);
     }
     
   } catch (error) {
-    console.error('Error in handleCancel:', error)
+    console.error('خطأ في عملية الإلغاء:', error);
   }
-}
+};
 
-const openIndexedDB = () => {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open('customsPlateDB', 1)
-    
-    request.onerror = (event) => reject(event)
-    request.onsuccess = (event) => resolve(event.target.result)
-    
-    request.onupgradeneeded = (event) => {
-      const db = event.target.result
-      if (!db.objectStoreNames.contains('calculations')) {
-        db.createObjectStore('calculations', { keyPath: 'id', autoIncrement: true })
-      }
-    }
-  })
-}
-
-// Add function to check for IndexedDB changes
 const checkForChanges = async () => {
   try {
-    const data = await fetchDataFromIndexedDB()
-    const currentDataLength = data.length
+    const data = await fetchDataFromIndexedDB();
+    const currentDataLength = data.length;
     
-    // If data length has changed or data content has changed
     if (currentDataLength !== lastDataLength) {
-      rows.value = data.filter(item => Object.keys(item).length > 0)
-      lastDataLength = currentDataLength
+      const uniqueData = data.filter((item, index, self) => 
+        index === self.findIndex(t => t.id === item.id)
+      );
+      
+      if (uniqueData.length !== rows.value.length) {
+        rows.value = uniqueData;
+        lastDataLength = uniqueData.length;
+      }
     }
   } catch (error) {
-    console.error('خطأ في التحقق من التغييرات', error)
+    console.error('خطأ في التحقق من التغييرات في IndexedDB:', error);
   }
-}
+};
 
-// Setup polling interval
 const setupPolling = () => {
-  // Check for changes every 1 second
-  setInterval(checkForChanges, 1000)
+  return setInterval(checkForChanges, 1000);
 }
 
-const fetchDataFromIndexedDB = () => {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open('customsPlateDB', 1)
-
-    request.onerror = (event) => {
-      console.error('خطأ في فتح قاعدة البيانات', event)
-      reject(event)
-    }
-
-    request.onsuccess = (event) => {
-      const db = event.target.result
-      const transaction = db.transaction(['calculations'], 'readonly')
-      const objectStore = transaction.objectStore('calculations')
-      const getAllRequest = objectStore.getAll()
-
-      getAllRequest.onsuccess = (event) => {
-        const allData = event.target.result
-        // Transform the data to match the new structure
-        const transformedData = allData.map(item => {
-          // If the data is already in the new format, return it as is
-          if (item.owner_name) {
-            return item
+const fetchDataFromIndexedDB = async () => {
+  try {
+    const db = await initDB();
+    const transaction = db.transaction(['calculations'], 'readonly');
+    const store = transaction.objectStore('calculations');
+    const request = store.getAll();
+    
+    return new Promise((resolve, reject) => {
+      request.onsuccess = async () => {
+        try {
+          const rawData = request.result;
+          
+          if (!rawData || rawData.length === 0) {
+            resolve([]);
+            return;
           }
-          // If the data is in the old format, transform it
-          if (item.data) {
-            return item.data
+          
+          const decryptedData = [];
+          const seenIds = new Set();
+          
+          for (const item of rawData) {
+            if (item && item.data) {
+              try {
+                const decryptedItem = await decryptEncryptedData(item.data);
+                
+                if (decryptedItem && decryptedItem.id && !seenIds.has(decryptedItem.id)) {
+                  seenIds.add(decryptedItem.id);
+                  decryptedData.push(decryptedItem);
+                }
+              } catch (decryptError) {
+                console.error('ReportsTable: خطأ في فك تشفير العنصر:', decryptError);
+              }
+            } else if (item && typeof item === 'object') {
+              try {
+                const decryptedItem = await decryptEncryptedData(item);
+                
+                if (decryptedItem && decryptedItem.id && !seenIds.has(decryptedItem.id)) {
+                  seenIds.add(decryptedItem.id);
+                  decryptedData.push(decryptedItem);
+                }
+              } catch (decryptError) {
+                console.error('ReportsTable: خطأ في فك تشفير العنصر:', decryptError);
+              }
+            }
           }
-          // Return empty object if data structure is unknown
-          return {}
-        })
-        resolve(transformedData)
-      }
+          
+          resolve(decryptedData);
+        } catch (error) {
+          console.error('ReportsTable: خطأ في معالجة البيانات:', error);
+          reject(error);
+        }
+      };
+      
+      request.onerror = () => {
+        console.error('ReportsTable: خطأ في قراءة البيانات من IndexedDB');
+        reject(request.error);
+      };
+    });
+  } catch (error) {
+    console.error('خطأ في قراءة البيانات من IndexedDB:', error);
+    throw error;
+  }
+};
 
-      getAllRequest.onerror = (event) => {
-        console.error('خطأ في قراءة البيانات', event)
-        reject(event)
+const decryptEncryptedData = async (encryptedObject) => {
+  try {
+    const decryptedObject = {};
+    
+    for (const [key, value] of Object.entries(encryptedObject)) {
+      if (isEncrypted(value)) {
+        try {
+          const decryptedValue = await decryptData(value);
+          decryptedObject[key] = decryptedValue;
+        } catch (decryptError) {
+          console.error(`ReportsTable: خطأ في فك تشفير ${key}:`, decryptError);
+          // للحقل status، نعرض القيمة المشفرة كما هي
+          if (key === 'status') {
+            decryptedObject[key] = value;
+          } else {
+            decryptedObject[key] = `[مشفر: ${value.encrypted.substring(0, 10)}...]`;
+          }
+        }
+      } else {
+        decryptedObject[key] = value;
       }
     }
+    
+    return decryptedObject;
+  } catch (error) {
+    console.error('خطأ في فك تشفير البيانات:', error);
+    return null;
+  }
+};
 
-    request.onupgradeneeded = (event) => {
-      const db = event.target.result
-      if (!db.objectStoreNames.contains('calculations')) {
-        db.createObjectStore('calculations', { keyPath: 'id', autoIncrement: true })
-      }
+const testSingleFieldDecryption = async () => {
+  try {
+    const currentKey = localStorage.getItem('encryptionKey');
+    
+    if (currentKey) {
+      const keyArray = JSON.parse(currentKey);
     }
-  })
-}
+    
+    const { encryptData } = await import('../../utils/encryption');
+    
+    const testValue = 'شركة التأمين';
+    const encryptedTest = await encryptData(testValue);
+    
+    const decryptedTest = await decryptData(encryptedTest);
+    
+ 
+    
+    try {
+      const decryptedValue = await decryptData(testField);
+    } catch (oldError) {
+    }
+    
+    return decryptedTest;
+  } catch (error) {
+    return null;
+  }
+};
 
 const totalPages = computed(() => Math.ceil(rows.value.length / pageSize.value))
 
@@ -309,22 +403,31 @@ const updatePage = (page) => {
 
 onMounted(async () => {
   try {
-    const data = await fetchDataFromIndexedDB()
-    rows.value = data.filter(item => Object.keys(item).length > 0)
-    lastDataLength = data.length
-    setupPolling() // Start polling for changes
+    await testSingleFieldDecryption();
+    
+    const data = await fetchDataFromIndexedDB();
+    
+    if (data && data.length > 0) {
+      rows.value = data;
+      lastDataLength = data.length;
+    }
+    
+    const pollingInterval = setupPolling();
+    
+    window.reportsTablePollingInterval = pollingInterval;
+    
   } catch (error) {
-    console.error('خطأ في جلب البيانات من IndexedDB', error)
-    rows.value = []
+    rows.value = [];
+  }
+});
+
+onUnmounted(() => {
+  if (window.reportsTablePollingInterval) {
+    clearInterval(window.reportsTablePollingInterval);
+    delete window.reportsTablePollingInterval;
   }
 })
 
-// Clean up interval when component is unmounted
-onUnmounted(() => {
-  clearInterval(setupPolling)
-})
-
-// Expose pagination data and methods to parent
 defineExpose({
   currentPage,
   totalPages,
@@ -333,11 +436,11 @@ defineExpose({
   totalItems: computed(() => rows.value.length),
   getAllData: async () => {
     try {
-      const data = await fetchDataFromIndexedDB()
-      return data.filter(item => Object.keys(item).length > 0)
+      const data = await fetchDataFromIndexedDB();
+      const validData = data.filter(item => item && Object.keys(item).length > 0);
+      return validData;
     } catch (error) {
-      console.error('Error fetching data for export:', error)
-      return []
+      return [];
     }
   }
 })
@@ -505,16 +608,25 @@ defineExpose({
 }
 
 .btn-danger {
-  background-color: #dc3545;
-  border-color: #dc3545;
-  color: white;
-  transition: all 0.2s ease;
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+  border: none;
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+  transition: all 0.3s ease;
+  font-weight: 600;
+  padding: 0.75rem 2rem;
+  border-radius: 8px;
 }
 
-.btn-danger:hover {
-  background-color: #bb2d3b;
-  border-color: #b02a37;
-  transform: translateY(-1px);
+.btn-danger:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(220, 53, 69, 0.4);
+  background: linear-gradient(135deg, #c82333 0%, #a71e2a 100%);
+}
+
+.btn-danger:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
 }
 
 /* Confirmation Dialog Styles */
