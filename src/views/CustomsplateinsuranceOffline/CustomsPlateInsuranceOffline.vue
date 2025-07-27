@@ -14,7 +14,14 @@
         v-model="extensionsData"
         @getExtensionsData="getExtensionsData"/>
 
-    <CalcPlate :payload="calculationData" :extensionsData="calculationData?.extensions"  :openModal="openModal" @closePopup="closePopUp" />
+    <CalcPlate 
+      :payload="calculationData" 
+      :extensionsData="calculationData?.extensions"  
+      :openModal="openModal" 
+      @closePopup="closePopUp"
+      :onConfirmPayment="confirmPayment"
+      :loading="loading"
+    />
     <footer class="card-footer bg-white d-flex justify-content-end border-top rounded-bottom py-3">
       <button class="btn btn-danger  rounded-3 py-2 fw-bold" style="width: 300px;" :disabled="loading" @click="calculate">
         <span v-if="!loading">احسب </span>
@@ -48,9 +55,8 @@ const initialLoading = ref(true)
 const closePopUp = () => {
   openModal.value = false
   loading.value = false
-  // store.dispatch('Vehicle/setUserData' , null)
-  // router.push({name:'OfflinePlate'})
-
+  // إعادة توجيه إلى الصفحة الرئيسية بعد تأكيد الدفع
+  router.push({name:'OfflinePlate'})
 }
 function calculate() {
   let user_data1 = store.getters["Vehicle/getUserData"]
@@ -64,7 +70,13 @@ function calculate() {
   if(attachments.value){
     const data2 = vehicleType.value.getVehicleType();
     const data = extensionsCustom.value.getExtensionsData();
-    if(data2 !== undefined && data !== undefined ){
+    
+    // التحقق من وجود بيانات صحيحة
+    if (!data || data === null || !data.selected || data.selected.length === 0) {
+      loading.value = false
+      return
+    }
+    if(data2 !== undefined){
       let selected_data = JSON.parse(JSON.stringify(data.selected))
       let extensions = selected_data.map((e)=>{
         if(e.id === 16){
@@ -102,128 +114,7 @@ function calculate() {
         calculationData.value = e
         extensionsData.value = e
         openModal.value = true
-        let user_data = store.getters["Vehicle/getUserData"]
-
-        let data2 = {
-          id: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
-          plate: user_data?.plateNumber,
-          code: null,
-          chassis_id: user_data?.chassisNumber,
-          motor_id: user_data?.engineNumber,
-          producer: user_data?.brand,
-          model: user_data?.model,
-          year: user_data?.manufacturingYear,
-          from_date: body?.from_date,
-          to_date: body.to_date,
-          issued_at:new Date().toISOString().split('T')[0],
-          insurance_state: 'New',
-          owner_name: user_data?.ownerName,
-          owner_national_id: user_data?.nationalId,
-          owner_address: user_data?.address,
-          owner_job: user_data?.job,
-          owner_phone: user_data?.phoneNumber,
-          net_premium: e.base_price,
-          tax: e.taxes.total,
-          stamp: e.taxes.stamp_tax,
-          admin_fees:e.taxes.supervision_tax,
-          audit_fees:e.taxes.review_tax,
-          issue_fees: e.issue_fees,
-          total_sum: e.final_total,
-          vehicle_license_type: body.vehicle_type,
-          motor_cc: null,
-          cylinders: user_data.cylinders,
-          fuel_type_id: body.fuel_type,
-          vehicle_color: body.vehicle_color,
-          vehicle_kg: null,
-          wt_kg: null,
-          extra_size_percent: null,
-          wt_extra: null,
-          body_modification_extensions: [],
-          passengers: null,
-          tractor_parts: null,
-          vehicle_shape: null,
-          attach_type: null,
-          attach_to_date: null,
-          attach_serial: null,
-          Insurance_entity: null,
-          region: null,
-          policy_status: null,
-          vehicle_type: null,
-          traffic_unit: sessionStorage.getItem('location'),
-          insurance_last_vendor: user_data?.lastInsuranceCompany,
-          status: 'done',
-        }
-
-        try {
-          const lastCode = await getLastCode();
-          if (!lastCode) {
-            let code = parseInt(sessionStorage.getItem('code'));
-            data2.code = code
-            await saveLastCode(code);
-          } else {
-            data2.code = lastCode + 1;
-            await saveLastCode(data2.code);
-          }
-        } catch (error) {
-          console.error('Error handling code:', error);
-        }
-        let data_to_save = {
-          data: JSON.parse(JSON.stringify(data2)),
-          timestamp: new Date().toISOString()
-        }
-        console.log('Attempting to save data:', data_to_save);
-
-        // Check network status and handle accordingly
-        if (navigator.onLine) {
-          // Online - call API with decrypted data
-          const decryptedData = await decryptObjectFields(data2, getEncryptedFields());
-          store.dispatch('Vehicle/resyncCustomPlate', [decryptedData])
-              .then(response => {
-                console.log('Data synced successfully with server:', response);
-                openModal.value = true
-
-              })
-              .catch(error => {
-                console.log(error);
-                loading.value = false
-                console.error('Error syncing with server:', error);
-                // If API call fails, save to IndexedDB as fallback
-                saveData(data_to_save)
-                    .then((result) => {
-                      console.log('Data saved to IndexedDB as fallback with ID:', result);
-                    })
-                    .catch(indexedDBError => {
-                      console.error('Error saving to IndexedDB:', indexedDBError);
-                    });
-              });
-        } else {
-          // Offline - save to IndexedDB
-
-          saveData(data_to_save)
-              .then((result) => {
-                console.log('Data saved successfully to IndexedDB with ID:', result);
-                openModal.value = true
-
-
-              })
-              .catch(error => {
-                console.log(error);
-                loading.value = false
-                console.error('Error saving data to IndexedDB:', error);
-                // Try to save again after a short delay
-                setTimeout(() => {
-                  saveData(data_to_save)
-                      .then((result) => {
-                        console.log('Data saved successfully on retry with ID:', result);
-                      })
-                      .catch(retryError => {
-                        console.error('Error saving data on retry:', retryError);
-                      });
-                }, 1000);
-              });
-
-        }
-
+        loading.value = false
       })
 
     } else {
@@ -239,131 +130,198 @@ function calculate() {
         console.log(data);
         calculationData.value = e
         console.log(e);
-        let user_data = store.getters["Vehicle/getUserData"]
-
-        let data2 = {
-          id: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
-          plate: user_data?.plateNumber,
-          chassis_id: user_data?.chassisNumber,
-          motor_id: user_data?.engineNumber,
-          producer: user_data?.brand,
-          model: user_data?.model,
-          year: user_data?.manufacturingYear,
-          from_date: data?.from_date,
-          to_date: data.to_date,
-          issued_at: new Date().toISOString().split('T')[0],
-          insurance_state: 'NEW',
-          owner_name: user_data?.ownerName,
-          owner_national_id: user_data?.nationalId,
-          owner_address: user_data?.address,
-          owner_job: user_data?.job,
-          owner_phone: user_data?.phoneNumber,
-          net_premium: e.base_price,
-          tax: e.taxes.total,
-          stamp: e.taxes.stamp_tax,
-          issue_fees: e.issue_fees,
-          admin_fees:e.taxes.supervision_tax,
-          audit_fees:e.taxes.review_tax,
-          total_sum: e.final_total,
-          vehicle_license_type: data?.CustomPlate,
-          motor_cc: null,
-          cylinders: user_data.cylinders,
-          fuel_type_id: data.fuel_type,
-          vehicle_color: data.vehicle_color,
-          vehicle_kg: null,
-          wt_kg: null,
-          extra_size_percent: null,
-          wt_extra: null,
-          body_modification_extensions: [],
-          passengers: null,
-          tractor_parts: null,
-          vehicle_shape: null,
-          attach_type: null,
-          attach_to_date: null,
-          attach_serial: null,
-          Insurance_entity: null,
-          region: null,
-          policy_status: null,
-          vehicle_type: user_data?.licenseType,
-          traffic_unit: null,
-          insurance_last_vendor: user_data?.lastInsuranceCompany,
-          status: 'done'
-        }
-        let user = store.getters["Auth/getUser"]
-        try {
-          const lastCode = await getLastCode();
-          if (!lastCode) {
-            data2.code = user.code;
-            await saveLastCode(user.code);
-          } else {
-            data2.code = lastCode + 1;
-            await saveLastCode(data2.code);
-          }
-        } catch (error) {
-          console.error('Error handling code:', error);
-          data2.code = user.code;
-        }
-        let data_to_save = {
-          data: JSON.parse(JSON.stringify(data2)),
-          timestamp: new Date().toISOString()
-        }
-        console.log('Attempting to save data:', data_to_save);
-
-        // Check network status and handle accordingly
-        if (navigator.onLine) {
-          // Online - call API
-          store.dispatch('Vehicle/resyncCustomPlate', [data2])
-              .then(response => {
-                console.log('Data synced successfully with server:', response);
-                openModal.value = true
-
-              })
-              .catch(error => {
-                console.log(error);
-                loading.value = false
-                console.error('Error syncing with server:', error);
-                // If API call fails, save to IndexedDB as fallback
-                saveData(data_to_save)
-                    .then((result) => {
-                      console.log('Data saved to IndexedDB as fallback with ID:', result);
-                    })
-                    .catch(indexedDBError => {
-                      console.error('Error saving to IndexedDB:', indexedDBError);
-                    });
-              });
-        } else {
-          // Offline - save to IndexedDB
-
-          saveData(data_to_save)
-              .then((result) => {
-                console.log('Data saved successfully to IndexedDB with ID:', result);
-                openModal.value = true
-
-
-              })
-              .catch(error => {
-                console.log(error);
-                loading.value = false
-                console.error('Error saving data to IndexedDB:', error);
-                // Try to save again after a short delay
-                setTimeout(() => {
-                  saveData(data_to_save)
-                      .then((result) => {
-                        console.log('Data saved successfully on retry with ID:', result);
-                      })
-                      .catch(retryError => {
-                        console.error('Error saving data on retry:', retryError);
-                      });
-                }, 1000);
-              });
-
-        }
-
+        openModal.value = true
+        loading.value = false
       })
     } else {
       loading.value = false
     }
   }
+  }
+}
+
+// دالة جديدة لحفظ البيانات عند تأكيد الدفع
+async function confirmPayment() {
+  loading.value = true
+  
+  try {
+    let user_data = store.getters["Vehicle/getUserData"]
+    let data2 = null
+    
+    if(attachments.value){
+      const vehicleData = vehicleType.value.getVehicleType();
+      const extensionsData = extensionsCustom.value.getExtensionsData();
+      
+      let selected_data = JSON.parse(JSON.stringify(extensionsData.selected))
+      let extensions = selected_data.map((e)=>{
+        if(e.id === 16){
+          return {
+            code:e.code,
+            custom_value:extensionsData.engineCapacity
+          }
+        }else if(e.id === 19){
+          return {
+            code: e.code,
+            custom_value:extensionsData.passengersCount
+          }
+        }else if(e.id === 24){
+          return {
+            code: e.code,
+            custom_value:extensionsData.vehicleWeight
+          }
+        }else {
+          return {
+            code:e.code,
+            custom_value:null
+          }
+        }
+      })
+      
+      // إنشاء نص نوع الملحق من الملحقات المختارة
+      const attachTypeNames = selected_data.map(ext => ext.name_ar).join(' + ');
+      
+      data2 = {
+        id: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
+        plate: user_data?.plateNumber,
+        code: null,
+        chassis_id: user_data?.chassisNumber,
+        motor_id: user_data?.engineNumber,
+        producer: user_data?.brand,
+        model: user_data?.model,
+        year: user_data?.manufacturingYear,
+        from_date: vehicleData?.from_date,
+        to_date: vehicleData.to_date,
+        issued_at:new Date().toISOString().split('T')[0],
+        insurance_state: 'New',
+        owner_name: user_data?.ownerName,
+        owner_national_id: user_data?.nationalId,
+        owner_address: user_data?.address,
+        owner_job: user_data?.job,
+        owner_phone: user_data?.phoneNumber,
+        net_premium: calculationData.value.base_price,
+        tax: calculationData.value.taxes.total,
+        stamp: calculationData.value.taxes.stamp_tax,
+        admin_fees:calculationData.value.taxes.supervision_tax,
+        audit_fees:calculationData.value.taxes.review_tax,
+        issue_fees: calculationData.value.issue_fees,
+        total_sum: calculationData.value.final_total,
+        vehicle_license_type: vehicleData.vehicle_type,
+        motor_cc: null,
+        cylinders: user_data.cylinders,
+        fuel_type_id: 'بنزين',
+        vehicle_color: vehicleData.vehicle_color,
+        vehicle_kg: null,
+        wt_kg: null,
+        extra_size_percent: null,
+        wt_extra: null,
+        body_modification_extensions: [],
+        passengers: null,
+        tractor_parts: null,
+        vehicle_shape: null,
+        attach_type: attachTypeNames,
+        attach_to_date: null,
+        attach_serial: null,
+        Insurance_entity: null,
+        region: null,
+        policy_status: null,
+        vehicle_type: null,
+        traffic_unit: sessionStorage.getItem('location'),
+        insurance_last_vendor: user_data?.lastInsuranceCompany,
+        status: 'done',
+      }
+    } else {
+      const vehicleData = vehicleType.value.getVehicleType();
+      
+      data2 = {
+        id: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
+        plate: user_data?.plateNumber,
+        chassis_id: user_data?.chassisNumber,
+        motor_id: user_data?.engineNumber,
+        producer: user_data?.brand,
+        model: user_data?.model,
+        year: user_data?.manufacturingYear,
+        from_date: vehicleData?.from_date,
+        to_date: vehicleData.to_date,
+        issued_at: new Date().toISOString().split('T')[0],
+        insurance_state: 'NEW',
+        owner_name: user_data?.ownerName,
+        owner_national_id: user_data?.nationalId,
+        owner_address: user_data?.address,
+        owner_job: user_data?.job,
+        owner_phone: user_data?.phoneNumber,
+        net_premium: calculationData.value.base_price,
+        tax: calculationData.value.taxes.total,
+        stamp: calculationData.value.taxes.stamp_tax,
+        issue_fees: calculationData.value.issue_fees,
+        admin_fees:calculationData.value.taxes.supervision_tax,
+        audit_fees:calculationData.value.taxes.review_tax,
+        total_sum: calculationData.value.final_total,
+        vehicle_license_type: vehicleData?.CustomPlate,
+        motor_cc: null,
+        cylinders: user_data.cylinders,
+        fuel_type_id: 'بنزين',
+        vehicle_color: vehicleData.vehicle_color,
+        vehicle_kg: null,
+        wt_kg: null,
+        extra_size_percent: null,
+        wt_extra: null,
+        body_modification_extensions: [],
+        passengers: null,
+        tractor_parts: null,
+        vehicle_shape: null,
+        attach_type: null,
+        attach_to_date: null,
+        attach_serial: null,
+        Insurance_entity: null,
+        region: null,
+        policy_status: null,
+        vehicle_type: user_data?.licenseType,
+        traffic_unit: sessionStorage.getItem('location'),
+        insurance_last_vendor: user_data?.lastInsuranceCompany,
+        status: 'done'
+      }
+    }
+
+    // إضافة الكود
+    try {
+      const lastCode = await getLastCode();
+      if (!lastCode) {
+        let code = parseInt(sessionStorage.getItem('code'));
+        data2.code = code
+        await saveLastCode(code);
+      } else {
+        data2.code = lastCode + 1;
+        await saveLastCode(data2.code);
+      }
+    } catch (error) {
+      console.error('Error handling code:', error);
+    }
+
+    let data_to_save = {
+      data: JSON.parse(JSON.stringify(data2)),
+      timestamp: new Date().toISOString()
+    }
+    console.log('Attempting to save data:', data_to_save);
+
+    // التحقق من حالة الاتصال والتعامل معها
+    if (navigator.onLine) {
+      // أونلاين - استدعاء API
+      const decryptedData = await decryptObjectFields(data2, getEncryptedFields());
+      await store.dispatch('Vehicle/resyncCustomPlate', [decryptedData]);
+      console.log('Data synced successfully with server');
+    } else {
+      // أوفلاين - حفظ في IndexedDB
+      await saveData(data_to_save);
+      console.log('Data saved successfully to IndexedDB');
+    }
+    
+    loading.value = false
+    // إغلاق المودال وإعادة التوجيه
+    closePopUp()
+    
+  } catch (error) {
+    console.error('Error in confirmPayment:', error);
+    loading.value = false
   }
 }
 

@@ -1,6 +1,10 @@
 <template>
   <footer class="footer-container">
-    <button class="action-button" @click="$emit('closePopup')">تم</button>
+    <button class="action-button" @click="handleConfirmPayment" :disabled="loading">
+      <span v-if="!loading">تأكيد الدفع</span>
+      <div v-else class="spinner-border spinner-border-sm" role="status">
+      </div>
+    </button>
   </footer>
 </template>
 
@@ -52,4 +56,12 @@
 }
 </style>
 <script setup lang="ts">
+const props = defineProps<{
+  onConfirmPayment: () => void;
+  loading?: boolean;
+}>();
+
+const handleConfirmPayment = () => {
+  props.onConfirmPayment();
+};
 </script>

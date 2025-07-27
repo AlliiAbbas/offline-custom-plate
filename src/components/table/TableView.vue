@@ -20,13 +20,15 @@
       </div>
     </div>
     <div class="table-wrapper">
-      <button @click="handleSync" class="px-4 m-2 rounded-2 bg-danger border-0 text-white">
-        مزامنة البيانات
-      </button>
+      <div class="table-actions">
+        <button @click="handleSync" class="px-4 m-2 rounded-2 bg-danger border-0 text-white">
+          مزامنة البيانات
+        </button>
 
-      <button @click="exportToExcel" class="px-4 m-2 rounded-2 bg-success border-0 text-white">
-        تصدير
-      </button>
+        <button @click="exportToExcel" class="px-4 m-2 rounded-2 bg-success border-0 text-white">
+          تصدير
+        </button>
+      </div>
 
       <ReportsTable ref="reportsTable" />
     </div>
@@ -73,6 +75,20 @@
     </div>
   </div>
 
+  <!-- No Data Popup -->
+  <div v-if="showNoDataPopup" class="offline-popup-overlay">
+    <div class="offline-popup">
+      <div class="offline-popup-content">
+        <div class="offline-popup-icon">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <h3>تنبيه</h3>
+        <p>لا توجد بيانات للتصدير أو المزامنة</p>
+        <button @click="showNoDataPopup = false" class="offline-popup-button">حسناً</button>
+      </div>
+    </div>
+  </div>
+
 
 
 </template>
@@ -96,16 +112,23 @@ const showOfflinePopup = ref(false)
 const showSuccess = ref(false)
 const showFailed = ref(false)
 const showClearDataPopup = ref(false)
+const showNoDataPopup = ref(false)
 const store = useStore()
 
 const fetchAllDataFromIndexedDB = async () => {
   try {
     const tableData = await getDecryptedDataForTable();
     console.log('Data for table display (TableView):', tableData);
-    return tableData;
+    
+    // التأكد من أن البيانات صالحة
+    if (tableData && Array.isArray(tableData)) {
+      return tableData.filter(item => item && typeof item === 'object' && Object.keys(item).length > 0);
+    }
+    
+    return [];
   } catch (error) {
     console.error('خطأ في قراءة البيانات من IndexedDB:', error);
-    throw error;
+    return [];
   }
 };
 
@@ -127,16 +150,29 @@ const handleSync = async () => {
       loaderSync.value.syncData(true)
     }
 
-    // جلب جميع البيانات من IndexedDB
-    const allData = await getAllData()
+    // محاولة جلب البيانات من الجدول أولاً
+    let allData = [];
     
-    // if (!allData || allData.length === 0) {
-    //   alert('لا توجد بيانات للمزامنة')
-    //   if (loaderSync.value) {
-    //     loaderSync.value.syncData(false)
-    //   }
-    //   return
-    // }
+    if (reportsTable.value) {
+      allData = await reportsTable.value.getAllData();
+    }
+    
+    // إذا لم تنجح، جرب جلب البيانات مباشرة من IndexedDB
+    if (!allData || allData.length === 0) {
+      try {
+        allData = await getAllData();
+      } catch (dbError) {
+        console.error('خطأ في جلب البيانات من IndexedDB:', dbError);
+      }
+    }
+
+    if (!allData || allData.length === 0) {
+      showNoDataPopup.value = true
+      if (loaderSync.value) {
+        loaderSync.value.syncData(false)
+      }
+      return
+    }
 
     // تحويل البيانات إلى الشكل المطلوب للـ API
     const policies = []
@@ -152,13 +188,14 @@ const handleSync = async () => {
       }
     }
 
-    // if (policies.length === 0) {
-    //   alert('لا توجد بيانات صالحة للمزامنة')
-    //   if (loaderSync.value) {
-    //     loaderSync.value.syncData(false)
-    //   }
-    //   return
-    // }
+    if (policies.length === 0) {
+      showNoDataPopup.value = true
+      if (loaderSync.value) {
+        loaderSync.value.syncData(false)
+      }
+      return
+    }
+    
     console.log(policies);
     // إرسال البيانات للباك إند
     await store.dispatch('Vehicle/resyncCustomPlate', policies).then(()=>{
@@ -174,31 +211,19 @@ const handleSync = async () => {
       }, 2000);
     })
     
-    //
-    // // إخفاء loader
+    // إخفاء loader
     if (loaderSync.value) {
       loaderSync.value.syncData(false)
     }
-    //
-    // إظهار رسالة نجاح
-
-    // // تحديث الجدول
-    // if (reportsTable.value) {
-    //   // إعادة تحميل البيانات
-    //   const data = await reportsTable.value.getAllData()
-    //   if (data && data.length > 0) {
-    //     reportsTable.value.rows = data
-    //   }
-    // }
     
   } catch (error) {
     console.error('خطأ في عملية المزامنة:', error)
     alert('فشل في المزامنة: ' + (error.message || 'خطأ غير معروف'))
     
     // إخفاء loader
-    // if (loaderSync.value) {
-    //   loaderSync.value.syncData(false)
-    // }
+    if (loaderSync.value) {
+      loaderSync.value.syncData(false)
+    }
   }
 }
 
@@ -206,6 +231,22 @@ const clearIndexedDBData = async () => {
   try {
     await clearTable()
     showClearDataPopup.value = false
+    
+    // تحديث الجدول بعد مسح البيانات
+    if (reportsTable.value) {
+      // إعادة تحميل البيانات
+      const data = await reportsTable.value.getAllData()
+      if (data && data.length > 0) {
+        reportsTable.value.rows = data
+      } else {
+        reportsTable.value.rows = []
+      }
+    }
+    
+    // تحديث العدد الإجمالي
+    if (reportsTable.value) {
+      totalItems.value = reportsTable.value.totalItems
+    }
   } catch (error) {
     console.error('Error clearing IndexedDB:', error)
     alert('حدث خطأ أثناء مسح البيانات')
@@ -214,10 +255,24 @@ const clearIndexedDBData = async () => {
 
 const exportToExcel = async () => {
   try {
-    const allData = await fetchAllDataFromIndexedDB()
+    // محاولة جلب البيانات من الجدول أولاً
+    let allData = [];
+    
+    if (reportsTable.value) {
+      allData = await reportsTable.value.getAllData();
+    }
+    
+    // إذا لم تنجح، جرب جلب البيانات مباشرة من IndexedDB
+    if (!allData || allData.length === 0) {
+      try {
+        allData = await fetchAllDataFromIndexedDB();
+      } catch (dbError) {
+        console.error('خطأ في جلب البيانات من IndexedDB:', dbError);
+      }
+    }
 
     if (!allData || allData.length === 0) {
-      alert("لا توجد بيانات للتصدير")
+      showNoDataPopup.value = true
       return
     }
 
@@ -283,11 +338,10 @@ const exportToExcel = async () => {
     const worksheet2 = XLSX.utils.json_to_sheet(formattedData2)
     const workbook2 = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(workbook2, worksheet2, 'تقرير تأمين السيارات')
-    worksheet['!cols'] = Object.keys(formattedData2[0]).map(() => ({wch: 15}))
+    worksheet2['!cols'] = Object.keys(formattedData2[0]).map(() => ({wch: 15}))
 
     XLSX.writeFile(workbook2, 'تقرير_تأمين_السيارات.xlsx')
-    // Show confirmation popup after successful export
-    showClearDataPopup.value = true
+    // تم التصدير بنجاح بدون بوب أب
     
   } catch (error) {
     console.error('Error exporting to Excel:', error)
@@ -305,12 +359,36 @@ watch(
         totalItems.value = newTotal
       }
     },
-    { immediate: true }
+    { immediate: true, deep: true }
 )
 
-onMounted(() => {
+// Watch for changes in the table data
+watch(
+    () => reportsTable.value?.rows,
+    (newRows) => {
+      if (newRows !== undefined) {
+        totalItems.value = newRows.length
+      }
+    },
+    { immediate: true, deep: true }
+)
+
+onMounted(async () => {
+  // انتظار قليل للتأكد من تحميل المكون
+  await new Promise(resolve => setTimeout(resolve, 100));
+  
   if (reportsTable.value) {
     totalItems.value = reportsTable.value.totalItems
+    
+    // محاولة جلب البيانات الأولية
+    try {
+      const data = await reportsTable.value.getAllData();
+      if (data && data.length > 0) {
+        totalItems.value = data.length;
+      }
+    } catch (error) {
+      console.error('خطأ في جلب البيانات الأولية:', error);
+    }
   }
 })
 </script>
@@ -349,6 +427,25 @@ onMounted(() => {
   border-radius: 0.5rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   overflow: hidden;
+}
+
+.table-actions {
+  padding: 1rem;
+  border-bottom: 1px solid #e9ecef;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.table-actions button {
+  transition: all 0.3s ease;
+  font-weight: 600;
+  min-width: 120px;
+}
+
+.table-actions button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 .pagination-wrapper {
@@ -422,6 +519,10 @@ onMounted(() => {
 .offline-popup-icon {
   font-size: 40px;
   color: #dc3545;
+}
+
+.offline-popup-icon .fa-exclamation-triangle {
+  color: #ffc107;
 }
 
 .offline-popup h3 {

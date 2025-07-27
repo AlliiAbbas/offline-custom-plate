@@ -9,7 +9,11 @@
       </div>
       <Total :payload="props?.payload" />
     </main>
-    <ActionButton @closePopup="$emit('closePopup')" />
+    <ActionButton 
+      @closePopup="$emit('closePopup')" 
+      :onConfirmPayment="props.onConfirmPayment"
+      :loading="props.loading"
+    />
   </article>
 </template>
 
@@ -19,7 +23,7 @@ import CustomsPlatCalc from "./CustomsPlateCacl.vue";
 import Total from "./Total.vue";
 import ActionButton from "@/components/CustomsPlate/Calc/ActionButton.vue";
 import PricingDetails from "@/components/CustomsPlate/Calc/PricingDetails.vue";
-const props = defineProps(['payload','extensionsData'])
+const props = defineProps(['payload','extensionsData', 'onConfirmPayment', 'loading'])
 </script>
 
 <style scoped>

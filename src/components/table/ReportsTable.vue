@@ -436,10 +436,17 @@ defineExpose({
   totalItems: computed(() => rows.value.length),
   getAllData: async () => {
     try {
+      // إذا كان لدينا بيانات في الجدول، استخدمها
+      if (rows.value && rows.value.length > 0) {
+        return rows.value;
+      }
+      
+      // وإلا جرب جلب البيانات من IndexedDB
       const data = await fetchDataFromIndexedDB();
       const validData = data.filter(item => item && Object.keys(item).length > 0);
       return validData;
     } catch (error) {
+      console.error('خطأ في getAllData:', error);
       return [];
     }
   }

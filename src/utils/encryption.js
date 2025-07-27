@@ -198,6 +198,8 @@ export const getEncryptedFields = () => {
     'net_premium',
     'tax',
     'stamp',
+    'admin_fees',
+    'audit_fees',
     'issue_fees',
     'total_sum',
     'vehicle_license_type',
